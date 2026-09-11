@@ -1,0 +1,128 @@
+{
+  "datasetName": "DischargeIQ Synthetic Patient Dataset",
+  "version": "1.0",
+  "syntheticOnly": true,
+  "description": "Completely fictional records for DischargeIQ development and demonstration. No real patient information.",
+  "patients": [
+    {
+      "patientId": "P001",
+      "name": "Maya Thompson",
+      "age": 58,
+      "language": "English",
+      "dischargeDate": "2026-09-10",
+      "diagnosis": "Pneumonia",
+      "dischargeText": "Take amoxicillin 500 mg by mouth three times a day for 7 days. Drink plenty of fluids and rest. Check your temperature twice a day. Call your doctor if your fever reaches 102°F (38.9°C) or higher, or if your breathing gets worse. Schedule a follow-up appointment with your primary care doctor for September 17, 2026.",
+      "medications": [
+        {
+          "name": "Amoxicillin",
+          "dose": "500 mg",
+          "route": "by mouth",
+          "frequency": "three times a day",
+          "duration": "7 days"
+        }
+      ],
+      "appointments": [
+        {
+          "type": "Primary care follow-up",
+          "date": "2026-09-17"
+        }
+      ]
+    },
+    {
+      "patientId": "P002",
+      "name": "Daniel Brooks",
+      "age": 67,
+      "language": "English",
+      "dischargeDate": "2026-09-09",
+      "diagnosis": "Type 2 diabetes",
+      "dischargeText": "Take metformin 500 mg with breakfast and dinner every day. Check your blood sugar before breakfast each morning and write the result in your log. Drink water regularly. Do not skip meals. Call your doctor if your blood sugar is below 70 mg/dL and does not improve after treating low blood sugar, or if it is above 300 mg/dL repeatedly. Follow up with your diabetes clinic on September 21, 2026.",
+      "medications": [
+        {
+          "name": "Metformin",
+          "dose": "500 mg",
+          "route": "by mouth",
+          "frequency": "with breakfast and dinner",
+          "duration": "as directed"
+        }
+      ],
+      "appointments": [
+        {
+          "type": "Diabetes clinic follow-up",
+          "date": "2026-09-21"
+        }
+      ]
+    },
+    {
+      "patientId": "P003",
+      "name": "Priya Shah",
+      "age": 45,
+      "language": "English",
+      "dischargeDate": "2026-09-08",
+      "diagnosis": "High blood pressure",
+      "dischargeText": "Take lisinopril 10 mg once every morning. Check your blood pressure at home once in the morning and record the reading. Stand up slowly if you feel dizzy. Call your doctor if you faint, have severe dizziness, or develop swelling of your face, lips, or tongue. Return for a blood pressure follow-up on September 24, 2026.",
+      "medications": [
+        {
+          "name": "Lisinopril",
+          "dose": "10 mg",
+          "route": "by mouth",
+          "frequency": "once every morning",
+          "duration": "as directed"
+        }
+      ],
+      "appointments": [
+        {
+          "type": "Blood pressure follow-up",
+          "date": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "patientId": "P004",
+      "name": "Robert Garcia",
+      "age": 72,
+      "language": "English",
+      "dischargeDate": "2026-09-07",
+      "diagnosis": "Heart failure",
+      "dischargeText": "Take furosemide 40 mg every morning. Weigh yourself at the same time each morning before breakfast and write down your weight. Limit salt as instructed by your care team. Call your doctor if you gain 2 pounds (0.9 kg) in one day or 5 pounds (2.3 kg) in one week. Seek urgent medical help if you have severe trouble breathing or chest pain. See your cardiology clinic on September 18, 2026.",
+      "medications": [
+        {
+          "name": "Furosemide",
+          "dose": "40 mg",
+          "route": "by mouth",
+          "frequency": "every morning",
+          "duration": "as directed"
+        }
+      ],
+      "appointments": [
+        {
+          "type": "Cardiology follow-up",
+          "date": "2026-09-18"
+        }
+      ]
+    },
+    {
+      "patientId": "P005",
+      "name": "Elena Martinez",
+      "age": 34,
+      "language": "English",
+      "dischargeDate": "2026-09-06",
+      "diagnosis": "Urinary tract infection",
+      "dischargeText": "Take nitrofurantoin 100 mg by mouth twice a day with food for 5 days. Finish all 5 days of medicine even if you feel better. Drink fluids unless your doctor has told you to limit them. Call your doctor if you develop a fever, back pain, vomiting, or symptoms that are getting worse. Follow up with your clinic on September 15, 2026 if your symptoms have not improved.",
+      "medications": [
+        {
+          "name": "Nitrofurantoin",
+          "dose": "100 mg",
+          "route": "by mouth",
+          "frequency": "twice a day with food",
+          "duration": "5 days"
+        }
+      ],
+      "appointments": [
+        {
+          "type": "Clinic follow-up if symptoms persist",
+          "date": "2026-09-15"
+        }
+      ]
+    }
+  ]
+}

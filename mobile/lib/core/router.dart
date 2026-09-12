@@ -1,5 +1,5 @@
 import 'package:go_router/go_router.dart';
-
+import '../core/models/process_discharge_response.dart';
 import '../core/models/discharge_request.dart';
 import '../core/models/teachback_session.dart';
 import '../features/auth/auth_screen.dart';
@@ -21,15 +21,20 @@ final appRouter = GoRouter(
     ),
 
     GoRoute(
-      path: '/teachback',
-      builder: (context, state) {
-        final request = state.extra as DischargeRequest;
+  path: '/teachback',
+  builder: (context, state) {
+    final data = state.extra as Map<String, dynamic>;
 
-        return TeachbackScreen(
-          dischargeRequest: request,
-        );
-      },
-    ),
+    final request = data['request'] as DischargeRequest;
+    final processResponse =
+        data['processResponse'] as ProcessDischargeResponse;
+
+    return TeachbackScreen(
+      dischargeRequest: request,
+      processResponse: processResponse,
+    );
+  },
+),
 
     GoRoute(
   path: '/results',

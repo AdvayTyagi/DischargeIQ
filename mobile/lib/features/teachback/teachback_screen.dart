@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
+import '../../data/services/discharge_api_service.dart';
 import '../../core/models/discharge_request.dart';
-import '../../core/models/teachback_session.dart';
+import '../../core/models/process_discharge_response.dart';
+
 
 class TeachbackScreen extends StatefulWidget {
   final DischargeRequest dischargeRequest;
+  final ProcessDischargeResponse processResponse;
 
   const TeachbackScreen({
     super.key,
     required this.dischargeRequest,
+    required this.processResponse,
   });
 
   @override
@@ -17,9 +20,10 @@ class TeachbackScreen extends StatefulWidget {
 }
 
 class _TeachbackScreenState extends State<TeachbackScreen> {
-  final TextEditingController _answerController = TextEditingController();
+  final TextEditingController _answerController =
+      TextEditingController();
 
-  bool _submitted = false;
+bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -27,149 +31,115 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
     super.dispose();
   }
 
-  void _submitAnswer() {
+  Future<void> _submitAnswer() async {
   final answer = _answerController.text.trim();
 
   if (answer.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Please enter your answer before submitting.'),
+        content: Text('Please enter your answer.'),
       ),
     );
     return;
   }
 
+  final question =
+      widget.processResponse.teachBackQuestions.first;
+
   setState(() {
-    _submitted = true;
+    _isSubmitting = true;
   });
+
+  try {
+    final apiService = DischargeApiService();
+
+    final gradeResponse = await apiService.gradeAnswer(
+      request: widget.dischargeRequest,
+      question: question.question,
+      patientAnswer: answer,
+    );
+
+    if (!mounted) return;
+
+    context.push(
+      '/results',
+      extra: gradeResponse,
+    );
+  } catch (e) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Failed to grade answer: $e'),
+      ),
+    );
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isSubmitting = false;
+      });
+    }
+  }
 }
 
   @override
   Widget build(BuildContext context) {
+    final question =
+        widget.processResponse.teachBackQuestions.first.question;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Teach-back'),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Let’s check your understanding',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Teach-back',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
               ),
-
-              const SizedBox(height: 10),
-
-              Text(
-                'Explain the instructions in your own words.',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.grey.shade600,
-                ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Please answer the following question in your own words.',
+            ),
+            const SizedBox(height: 32),
+            Text(
+              question,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
               ),
-
-              const SizedBox(height: 24),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: Colors.grey.shade100,
+            ),
+            const SizedBox(height: 24),
+            TextField(
+              controller: _answerController,
+              maxLines: 5,
+              decoration: InputDecoration(
+                hintText: 'Type your answer...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Question',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'What should you do at home after being discharged?',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
+                contentPadding: const EdgeInsets.all(16),
               ),
+            ),
+            const Spacer(),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isSubmitting ? null : _submitAnswer,
+                
 
-              const SizedBox(height: 20),
-
-              Expanded(
-                child: TextField(
-                  controller: _answerController,
-                  maxLines: null,
-                  expands: true,
-                  textAlignVertical: TextAlignVertical.top,
-                  decoration: InputDecoration(
-                    hintText: 'Type your answer here...',
-                    filled: true,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    contentPadding: const EdgeInsets.all(16),
-                  ),
-                ),
+child: Text(
+  _isSubmitting ? 'Grading...' : 'Submit Answer',
+),
               ),
-
-              const SizedBox(height: 16),
-
-              if (_submitted)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.green.withValues(alpha: 0.12),
-                  ),
-                  child: const Text(
-                    'Answer submitted successfully.',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (_submitted) {
-                      final session = TeachbackSession(
-  dischargeRequest: widget.dischargeRequest,
-  answer: _answerController.text.trim(),
-);
-
-context.push(
-  '/results',
-  extra: session,
-);
-                    } else {
-                      _submitAnswer();
-                    }
-                  },
-                  child: Text(
-                    _submitted ? 'View Results' : 'Submit Answer',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

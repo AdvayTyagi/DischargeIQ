@@ -94,29 +94,30 @@ function validateGradeAnswerResponse(data) {
   return true;
 }
 
-module.exports = {
-  parseJsonResponse,
-  validateProcessDischargeResponse,
-  validateGradeAnswerResponse,
-  validateClinicalFacts
-};
-
 function validateClinicalFacts(originalText, simplifiedInstructions) {
-  const simplifiedText = simplifiedInstructions.join(" ").toLowerCase();
-  const original = originalText.toLowerCase();
+  const simplifiedText =
+    simplifiedInstructions.join(" ").toLowerCase();
+
+  const original =
+    originalText.toLowerCase();
 
   const importantPatterns = [
     /\b\d+(?:\.\d+)?\s*mg\b/g,
     /\b\d+(?:\.\d+)?\s*g\b/g,
     /\b\d+(?:\.\d+)?\s*mcg\b/g,
     /\b\d+(?:\.\d+)?\s*ml\b/g,
+
     /\b\d+\s*(?:times|time)\s*(?:a|per)\s*day\b/g,
+
     /\bonce\s+(?:a|per)\s*day\b/g,
     /\btwice\s+(?:a|per)\s*day\b/g,
     /\bthree\s+times\s+(?:a|per)\s*day\b/g,
     /\bfour\s+times\s+(?:a|per)\s*day\b/g,
+
     /\bfor\s+\d+\s+days?\b/g,
+
     /\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g,
+
     /\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},?\s+\d{4}\b/gi
   ];
 
@@ -132,3 +133,10 @@ function validateClinicalFacts(originalText, simplifiedInstructions) {
 
   return true;
 }
+
+module.exports = {
+  parseJsonResponse,
+  validateProcessDischargeResponse,
+  validateGradeAnswerResponse,
+  validateClinicalFacts
+};

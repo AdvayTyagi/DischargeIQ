@@ -1,29 +1,67 @@
 # DischargeIQ API Contract
 
-This document defines the interface between the Flutter app and the
-DischargeIQ Node.js backend.
+## Version
 
-All patient data used for development/demo purposes is synthetic.
-
----
-
-# 1. Process Discharge
-
-## Endpoint
-
-POST `/process-discharge`
+1.0.0
 
 ## Purpose
 
-Takes a patient's original discharge instructions and returns:
+This document defines the API contract between the DischargeIQ Flutter
+application and the Node.js/Express backend.
 
-- simplified patient-friendly instructions
-- teach-back questions
+The backend is responsible for:
 
-## Request
+1. Processing original hospital discharge instructions.
+2. Simplifying instructions into patient-friendly language.
+3. Translating instructions into the patient's preferred language.
+4. Generating teach-back questions.
+5. Grading patient teach-back answers.
+6. Returning only validated JSON to the Flutter application.
 
-```json
-{
-  "patientId": "P001",
-  "dischargeText": "Take amoxicillin 500 mg by mouth three times a day for 7 days. Drink plenty of fluids and rest. Check your temperature twice a day. Call your doctor if your fever reaches 102°F (38.9°C) or higher, or if your breathing gets worse. Schedule a follow-up appointment with your primary care doctor for September 17, 2026."
-}
+All development and demonstration patient data must be synthetic.
+
+---
+
+# 1. System Architecture
+
+The application follows this flow:
+
+```text
+Synthetic Patient Dataset
+        |
+        v
+     Flutter
+        |
+        | POST /process-discharge
+        v
+ Node.js / Express
+        |
+        v
+ Ollama
+        |
+        v
+  Llama 3.1 8B
+        |
+        v
+Validated JSON
+        |
+        v
+     Flutter
+        |
+        | Patient answers teach-back question
+        |
+        | POST /grade-answer
+        v
+ Node.js / Express
+        |
+        v
+ Ollama
+        |
+        v
+  Llama 3.1 8B
+        |
+        v
+Grade + feedback
+        |
+        v
+     Flutter

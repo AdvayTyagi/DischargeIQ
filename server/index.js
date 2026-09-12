@@ -9,7 +9,8 @@ const {
 
 const {
   validateProcessDischargeResponse,
-  validateGradeAnswerResponse
+  validateGradeAnswerResponse,
+  validateClinicalFacts
 } = require("./validator");
 
 const {
@@ -122,6 +123,23 @@ app.post("/process-discharge", async (req, res) => {
       validateProcessDischargeResponse,
       3
     );
+    
+  const clinicalFactsValid = validateClinicalFacts(
+    dischargeText,
+    result.simplifiedInstructions
+  );
+
+  if (!clinicalFactsValid) {
+    console.error(
+      "Clinical fact validation failed."
+    );
+
+    return res.status(500).json({
+      error: "Unable to safely process discharge instructions"
+    });
+  }
+
+    
 
     // Make sure the model did not change identifiers
     if (result.patientId !== patientId) {

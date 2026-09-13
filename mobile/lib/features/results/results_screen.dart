@@ -10,32 +10,23 @@ class ResultsScreen extends StatelessWidget {
     required this.teachbackSession,
   });
 
-  // Mock result for now.
-  // Later this will come from the backend response contract.
-  static const String result = 'green';
-
   @override
   Widget build(BuildContext context) {
-    final bool isGreen = result == 'green';
-    final bool isAmber = result == 'amber';
+    final grade = teachbackSession.gradeResponse;
 
-    final String title = isGreen
+    final bool isCorrect = grade.correct;
+
+    final String title = isCorrect
         ? 'Good Understanding'
-        : isAmber
-            ? 'Needs Clarification'
-            : 'Needs Attention';
+        : 'Needs Clarification';
 
-    final String message = isGreen
-        ? 'You have demonstrated a good understanding of your discharge instructions.'
-        : isAmber
-            ? 'Some parts of your answer may need further clarification.'
-            : 'Please review your discharge instructions and speak with a healthcare professional if needed.';
+    final String message = grade.feedback;
 
-    final IconData icon = isGreen
+    final IconData icon = isCorrect
         ? Icons.check_circle
-        : isAmber
-            ? Icons.warning_amber_rounded
-            : Icons.error;
+        : Icons.warning_amber_rounded;
+
+    final int percentage = grade.score * 100;
 
     return Scaffold(
       appBar: AppBar(
@@ -85,19 +76,19 @@ class ResultsScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(16),
                   color: Colors.grey.shade100,
                 ),
-                child: const Column(
+                child: Column(
                   children: [
-                    Text(
+                    const Text(
                       'Understanding Score',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     Text(
-                      '85%',
-                      style: TextStyle(
+                      '$percentage%',
+                      style: const TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
                       ),

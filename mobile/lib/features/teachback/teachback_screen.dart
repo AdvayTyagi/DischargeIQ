@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../data/services/discharge_api_service.dart';
 import '../../core/models/discharge_request.dart';
 import '../../core/models/process_discharge_response.dart';
+import '../../core/models/teachback_session.dart';
 
 
 class TeachbackScreen extends StatefulWidget {
@@ -61,9 +62,17 @@ bool _isSubmitting = false;
 
     if (!mounted) return;
 
+    final session = TeachbackSession(
+      dischargeRequest: widget.dischargeRequest,
+      processResponse: widget.processResponse,
+      question: question,
+      answer: answer,
+      gradeResponse: gradeResponse,
+    );
+
     context.push(
       '/results',
-      extra: gradeResponse,
+      extra: session,
     );
   } catch (e) {
     if (!mounted) return;

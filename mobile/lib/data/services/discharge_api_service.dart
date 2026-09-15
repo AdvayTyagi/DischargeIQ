@@ -19,7 +19,7 @@ class DischargeApi {
   //         (find it by running `ipconfig` in a terminal on your PC
   //         and looking for "IPv4 Address")
   // -------------------------------------------------------------
-  static const String baseUrl = "http://10.0.2.2:3000";
+  static const String baseUrl = "http://10.83.149.6:3000";
 
   /// Sends the discharge text to the backend and returns a filled-in
   /// DischargeSession (simplified instructions + teach-back questions).

@@ -63,6 +63,153 @@ function requireString(body, fieldName) {
 }
 
 // --------------------------------------------------
+// Helper: Normalize text for fast grading
+// --------------------------------------------------
+
+function normalizeText(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// --------------------------------------------------
+// Helper: Remove common filler words
+// --------------------------------------------------
+
+function removeFillerWords(text) {
+  const fillerWords = new Set([
+    "i",
+    "me",
+    "my",
+    "we",
+    "our",
+    "you",
+    "your",
+    "the",
+    "a",
+    "an",
+    "to",
+    "do",
+    "should",
+    "need",
+    "have",
+    "has",
+    "that",
+    "if",
+    "then"
+  ]);
+
+  return normalizeText(text)
+    .split(" ")
+    .filter((word) => !fillerWords.has(word));
+}
+
+// --------------------------------------------------
+// Helper: Check whether answer clearly appears
+// in the discharge instructions
+// --------------------------------------------------
+
+function fastGradeAnswer(
+  dischargeText,
+  question,
+  patientAnswer
+) {
+  const answerWords =
+    removeFillerWords(patientAnswer);
+
+  const dischargeWords =
+    removeFillerWords(dischargeText);
+
+  if (answerWords.length === 0) {
+    return null;
+  }
+
+  // Very short answers are too ambiguous
+  // to grade locally.
+  if (answerWords.length === 1) {
+    const importantSingleWords = new Set([
+      "morning",
+      "evening",
+      "night",
+      "weekly",
+      "daily",
+      "twice",
+      "three",
+      "four",
+      "doctor",
+      "rest",
+      "fluids",
+      "water"
+    ]);
+
+    if (!importantSingleWords.has(answerWords[0])) {
+      return null;
+    }
+  }
+
+  // Check whether the answer's important words
+  // occur in the original discharge instructions.
+  const allWordsPresent = answerWords.every(
+    (word) => dischargeWords.includes(word)
+  );
+
+  if (!allWordsPresent) {
+    return null;
+  }
+
+  // Make sure the answer contains a meaningful
+  // action/concept rather than just a common word.
+  const actionWords = new Set([
+    "take",
+    "call",
+    "contact",
+    "check",
+    "monitor",
+    "drink",
+    "rest",
+    "weigh",
+    "seek",
+    "return",
+    "follow",
+    "schedule",
+    "limit",
+    "finish",
+    "record",
+    "stand",
+    "medicine",
+    "doctor",
+    "morning",
+    "evening",
+    "night",
+    "daily",
+    "twice",
+    "three",
+    "four",
+    "weekly"
+  ]);
+
+  const containsMeaningfulWord =
+    answerWords.some((word) =>
+      actionWords.has(word)
+    );
+
+  if (!containsMeaningfulWord) {
+    return null;
+  }
+
+  // If the answer is clearly represented in the
+  // discharge instructions, accept it immediately.
+  return {
+    patientId: null,
+    correct: true,
+    score: 1,
+    feedback: "Correct."
+  };
+}
+
+// --------------------------------------------------
 // POST /process-discharge
 // --------------------------------------------------
 
@@ -131,7 +278,8 @@ app.post("/process-discharge", async (req, res) => {
       );
 
       return res.status(500).json({
-        error: "Unable to process discharge instructions"
+        error:
+          "Unable to process discharge instructions"
       });
     }
 
@@ -144,11 +292,12 @@ app.post("/process-discharge", async (req, res) => {
       );
 
       return res.status(500).json({
-        error: "Unable to process discharge instructions"
+        error:
+          "Unable to process discharge instructions"
       });
     }
 
-    // Return only validated data
+    // Return validated data
 
     return res.status(200).json(result);
 
@@ -159,7 +308,8 @@ app.post("/process-discharge", async (req, res) => {
     );
 
     return res.status(500).json({
-      error: "Unable to process discharge instructions"
+      error:
+        "Unable to process discharge instructions"
     });
   }
 });
@@ -229,7 +379,36 @@ app.post("/grade-answer", async (req, res) => {
       `Grading teach-back answer for patient ${patientId}`
     );
 
-    // Build LLM prompt
+    // --------------------------------------------------
+    // FAST LOCAL CHECK
+    // --------------------------------------------------
+
+    const fastResult = fastGradeAnswer(
+      dischargeText,
+      question,
+      patientAnswer
+    );
+
+    if (fastResult) {
+      console.log(
+        "Fast local grading: answer accepted."
+      );
+
+      return res.status(200).json({
+        patientId,
+        correct: fastResult.correct,
+        score: fastResult.score,
+        feedback: fastResult.feedback
+      });
+    }
+
+    console.log(
+      "Answer requires LLM grading."
+    );
+
+    // --------------------------------------------------
+    // LLM GRADING
+    // --------------------------------------------------
 
     const prompt = buildGradeAnswerPrompt(
       patientId,
@@ -239,15 +418,14 @@ app.post("/grade-answer", async (req, res) => {
       patientAnswer
     );
 
-    // Ask Ollama for validated JSON
-
     const result = await generateValidJson(
       prompt,
       validateGradeAnswerResponse,
       3
     );
 
-    // Make sure the model returned the correct patient
+    // Make sure the model returned
+    // the correct patient
 
     if (result.patientId !== patientId) {
       console.error(
@@ -259,7 +437,7 @@ app.post("/grade-answer", async (req, res) => {
       });
     }
 
-    // Return only validated data
+    // Return validated result
 
     return res.status(200).json(result);
 

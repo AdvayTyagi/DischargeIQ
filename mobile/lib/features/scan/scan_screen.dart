@@ -6,7 +6,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/models/discharge_request.dart';
-import '../../data/services/discharge_api_service.dart';
+import '../../core/services/discharge_api.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -92,7 +92,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
       if (!mounted) return;
 
-      context.push('/teachback', extra: session);
+      context.push('/summary', extra: session);
     } catch (e) {
       if (!mounted) return;
 

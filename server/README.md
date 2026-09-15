@@ -1,32 +1,20 @@
-# DischargeIQ Local LLM Server
+cat > server/README.md <<'EOF'
+# DischargeIQ Server
 
-This folder contains the local LLM backend for DischargeIQ.
+This folder contains the backend for DischargeIQ.
 
-The backend uses Node.js, Express, Ollama, and Llama 3.1 8B.
+The backend uses Node.js, Express, and Google Gemini.
 
 ## Architecture
 
-Flutter App
-    |
-    | HTTP JSON
-    v
-Node.js / Express
-    |
-    v
-Ollama
-    |
-    v
-Llama 3.1 8B
-
-## Requirements
-
-- Node.js
-- Ollama
-- Llama 3.1 8B
-
-## Install dependencies
-
-From the `server` directory:
-
-```bash
-npm install
+```text
+Flutter Mobile App
+        |
+        v
+   Node.js / Express
+        |
+        v
+    Google Gemini
+        |
+        v
+     Gemini API

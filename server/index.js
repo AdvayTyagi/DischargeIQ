@@ -262,7 +262,7 @@ app.post("/process-discharge", async (req, res) => {
       dischargeText
     );
 
-    // Ask Ollama for validated JSON
+    // Ask Genimi for validated JSON
 
     const result = await generateValidJson(
       prompt,
@@ -457,8 +457,8 @@ app.post("/grade-answer", async (req, res) => {
 // Start Server
 // --------------------------------------------------
 
-app.listen(PORT, () => {
+app.listen(PORT,"0.0.0.0", () => {
   console.log(
-    `DischargeIQ server running on http://localhost:${PORT}`
+    `DischargeIQ server running on port ${PORT}`
   );
 });

@@ -2,6 +2,7 @@ import '../core/models/discharge_request.dart';
 
 const DischargeRequest mockDischargeRequest = DischargeRequest(
   patientId: 'P001',
+  preferredLanguage: 'English',
   dischargeText:
       'Take amoxicillin 500 mg by mouth three times a day for 7 days. '
       'Drink plenty of fluids and rest. '

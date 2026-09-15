@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import '../../data/services/discharge_api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
@@ -61,31 +61,80 @@ class _ScanScreenState extends State<ScanScreen> {
     }
   }
 
-  void _continueToTeachBack() {
-    final dischargeText = _textController.text.trim();
 
-    if (dischargeText.isEmpty) {
+    Future<void> _continueToTeachBack() async {
+  final dischargeText = _textController.text.trim();
+
+  if (dischargeText.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'Please scan or enter your discharge instructions.',
+        ),
+      ),
+    );
+    return;
+  }
+
+  final request = DischargeRequest(
+    patientId: 'P001',
+    preferredLanguage: 'English',
+    dischargeText: dischargeText,
+  );
+
+  debugPrint('Patient ID: ${request.patientId}');
+  debugPrint('Discharge text: ${request.dischargeText}');
+  debugPrint('JSON: ${request.toJson()}');
+
+  setState(() {
+    _isProcessing = true;
+  });
+
+  try {
+    final apiService = DischargeApiService();
+
+    final processResponse =
+        await apiService.processDischarge(request);
+
+    if (!mounted) return;
+
+    if (processResponse.teachBackQuestions.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Please scan or enter your discharge instructions.',
+            'The backend did not generate a teach-back question.',
           ),
         ),
       );
       return;
     }
 
-    final request = DischargeRequest(
-      patientId: 'P001',
-      dischargeText: dischargeText,
+    context.push(
+      '/teachback',
+      extra: {
+        'request': request,
+        'processResponse': processResponse,
+      },
     );
+  } catch (e) {
+    if (!mounted) return;
 
-    debugPrint('Patient ID: ${request.patientId}');
-    debugPrint('Discharge text: ${request.dischargeText}');
-    debugPrint('JSON: ${request.toJson()}');
-
-    context.push('/teachback', extra: request,);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Failed to process discharge: $e',
+        ),
+      ),
+    );
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isProcessing = false;
+      });
+    }
   }
+}
+  
 
   @override
   void dispose() {

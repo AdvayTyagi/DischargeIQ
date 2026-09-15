@@ -31,6 +31,7 @@ IMPORTANT RULES:
 17. Always provide the correct answer using ONLY the original discharge instructions and the teach-back question.
 18. The correctAnswer must directly answer the teach-back question.
 19. Do not invent information that is not present in the original discharge instructions.
+20. Translate the feedback and correctAnswer into the patient's preferred language.
 
 PATIENT ID:
 ${patientId}

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/models/session.dart';
+import '../../core/l10n.dart';
 
 class ResultsScreen extends StatelessWidget {
   final DischargeSession session;
@@ -29,25 +30,23 @@ class ResultsScreen extends StatelessWidget {
     if (percent >= 80) {
       verdictColor = Colors.green;
       verdictIcon = Icons.check_circle;
-      title = 'Good Understanding';
-      message =
-          'You have demonstrated a good understanding of your discharge instructions.';
+      title = L10n.get('goodUnderstanding', session.preferredLanguage);
+      message = L10n.get('goodDesc', session.preferredLanguage);
     } else if (percent >= 50) {
       verdictColor = Colors.orange;
       verdictIcon = Icons.warning_amber_rounded;
-      title = 'Needs Clarification';
-      message = 'Some parts of your understanding may need reviewing.';
+      title = L10n.get('needsClarification', session.preferredLanguage);
+      message = L10n.get('clarificationDesc', session.preferredLanguage);
     } else {
       verdictColor = Colors.red;
       verdictIcon = Icons.error;
-      title = 'Needs Attention';
-      message =
-          'Please review your discharge instructions and speak with a healthcare professional if needed.';
+      title = L10n.get('needsAttention', session.preferredLanguage);
+      message = L10n.get('attentionDesc', session.preferredLanguage);
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Results'),
+        title: Text(L10n.get('results', session.preferredLanguage)),
       ),
       body: SafeArea(
         child: ListView(
@@ -95,9 +94,9 @@ class ResultsScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  const Text(
-                    'Understanding Score',
-                    style: TextStyle(
+                  Text(
+                    L10n.get('understandingScore', session.preferredLanguage),
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w500,
                     ),
@@ -116,7 +115,7 @@ class ResultsScreen extends StatelessWidget {
                   const SizedBox(height: 4),
 
                   Text(
-                    '$correctCount out of $totalGraded correct',
+                    '$correctCount ${L10n.get('outOf', session.preferredLanguage)} $totalGraded ${L10n.get('correct', session.preferredLanguage)}',
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.grey.shade600,
@@ -128,9 +127,9 @@ class ResultsScreen extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            const Text(
-              'Question by question',
-              style: TextStyle(
+            Text(
+              L10n.get('questionByQuestion', session.preferredLanguage),
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -182,7 +181,7 @@ class ResultsScreen extends StatelessWidget {
                       const SizedBox(height: 8),
 
                       Text(
-                        'Answer: ${q.patientAnswer}',
+                        '${L10n.get('answerPrefix', session.preferredLanguage)} ${q.patientAnswer}',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey.shade700,
@@ -208,9 +207,9 @@ class ResultsScreen extends StatelessWidget {
                     if (!wasCorrect && q.correctAnswer != null) ...[
                       const SizedBox(height: 12),
 
-                      const Text(
-                        'Correct answer:',
-                        style: TextStyle(
+                      Text(
+                        L10n.get('correctAnswer', session.preferredLanguage),
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
@@ -231,7 +230,7 @@ class ResultsScreen extends StatelessWidget {
                       const SizedBox(height: 6),
 
                       Text(
-                        'Took ${q.attempts} tries',
+                        '${L10n.get('took', session.preferredLanguage)} ${q.attempts} ${L10n.get('tries', session.preferredLanguage)}',
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey.shade500,
@@ -253,9 +252,9 @@ class ResultsScreen extends StatelessWidget {
                   Navigator.of(context)
                       .popUntil((route) => route.isFirst);
                 },
-                child: const Text(
-                  'Done',
-                  style: TextStyle(fontSize: 16),
+                child: Text(
+                  L10n.get('done', session.preferredLanguage),
+                  style: const TextStyle(fontSize: 16),
                 ),
               ),
             ),

@@ -5,6 +5,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../core/models/session.dart';
 import '../../core/services/discharge_api.dart';
+import '../../core/l10n.dart';
 
 class TeachbackScreen extends StatefulWidget {
   final DischargeSession session;
@@ -90,7 +91,7 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Speech recognition error: ${error.errorMsg}',
+                '${L10n.get('speechError', widget.session.preferredLanguage)}${error.errorMsg}',
               ),
             ),
           );
@@ -205,9 +206,9 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Speech recognition is not available on this device.',
+            L10n.get('speechNotAvailable', widget.session.preferredLanguage),
           ),
         ),
       );
@@ -267,9 +268,9 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
 
     if (answer.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Please type or speak your answer first.',
+            L10n.get('pleaseType', widget.session.preferredLanguage),
           ),
         ),
       );
@@ -361,9 +362,9 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Could not check your answer. Please try again.',
+            L10n.get('couldNotCheck', widget.session.preferredLanguage),
           ),
         ),
       );
@@ -382,16 +383,16 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          title: const Row(
+          title: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.cancel,
                 color: Colors.red,
               ),
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Not quite',
+                  L10n.get('notQuite', widget.session.preferredLanguage),
                 ),
               ),
             ],
@@ -401,9 +402,9 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (question.patientAnswer != null) ...[
-                  const Text(
-                    'Your answer:',
-                    style: TextStyle(
+                  Text(
+                    L10n.get('yourAnswerLabel', widget.session.preferredLanguage),
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -414,9 +415,9 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
                   const SizedBox(height: 16),
                 ],
                 if (question.feedback != null) ...[
-                  const Text(
-                    'Feedback:',
-                    style: TextStyle(
+                  Text(
+                    L10n.get('feedback', widget.session.preferredLanguage),
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -427,9 +428,9 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
                   const SizedBox(height: 16),
                 ],
                 if (question.correctAnswer != null) ...[
-                  const Text(
-                    'Correct answer:',
-                    style: TextStyle(
+                  Text(
+                    L10n.get('correctAnswer', widget.session.preferredLanguage),
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -449,8 +450,8 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text(
-                'Continue',
+              child: Text(
+                L10n.get('continue', widget.session.preferredLanguage),
               ),
             ),
           ],
@@ -481,13 +482,13 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
     if (_queue.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text(
-            'Teach-Back',
+          title: Text(
+            L10n.get('teachBack', widget.session.preferredLanguage),
           ),
         ),
-        body: const Center(
+        body: Center(
           child: Text(
-            'No teach-back questions available.',
+            L10n.get('noQuestions', widget.session.preferredLanguage),
           ),
         ),
       );
@@ -499,8 +500,8 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Teach-Back',
+        title: Text(
+          L10n.get('teachBack', widget.session.preferredLanguage),
         ),
       ),
       body: SafeArea(
@@ -512,7 +513,7 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
             // -------------------------------------------------------
 
             Text(
-              'Question $progress',
+              '${L10n.get('question', widget.session.preferredLanguage)} $progress',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -542,9 +543,9 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Teach-back question',
-                    style: TextStyle(
+                  Text(
+                    L10n.get('teachBackQuestion', widget.session.preferredLanguage),
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
@@ -571,8 +572,8 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
                       icon: const Icon(
                         Icons.volume_up,
                       ),
-                      label: const Text(
-                        'Read Question Aloud',
+                      label: Text(
+                        L10n.get('readQuestion', widget.session.preferredLanguage),
                       ),
                     ),
                   ),
@@ -586,9 +587,9 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
             // TYPE OR SPEAK
             // -------------------------------------------------------
 
-            const Text(
-              'Your answer',
-              style: TextStyle(
+            Text(
+              L10n.get('yourAnswer', widget.session.preferredLanguage),
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
               ),
@@ -597,7 +598,7 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
             const SizedBox(height: 8),
 
             Text(
-              'Type your answer or use the microphone.',
+              L10n.get('typeOrSpeak', widget.session.preferredLanguage),
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade600,
@@ -617,7 +618,7 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
               textInputAction: TextInputAction.done,
               onChanged: _updateAnswer,
               decoration: InputDecoration(
-                hintText: 'Type your answer here...',
+                hintText: L10n.get('typeHere', widget.session.preferredLanguage),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -689,8 +690,8 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
 
                   Text(
                     _isListening
-                        ? 'Listening...'
-                        : 'Speak your answer',
+                        ? L10n.get('listening', widget.session.preferredLanguage)
+                        : L10n.get('speakAnswer', widget.session.preferredLanguage),
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: 16,
@@ -726,8 +727,8 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
 
                   Text(
                     _isListening
-                        ? 'Tap stop when you are finished.'
-                        : 'Your spoken answer will appear in the text box above.',
+                        ? L10n.get('tapStop', widget.session.preferredLanguage)
+                        : L10n.get('spokenWillAppear', widget.session.preferredLanguage),
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 12,
@@ -753,8 +754,8 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
                     icon: const Icon(
                       Icons.volume_up,
                     ),
-                    label: const Text(
-                      'Question Again',
+                    label: Text(
+                      L10n.get('questionAgain', widget.session.preferredLanguage),
                     ),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
@@ -774,8 +775,8 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
                     icon: const Icon(
                       Icons.clear,
                     ),
-                    label: const Text(
-                      'Clear',
+                    label: Text(
+                      L10n.get('clear', widget.session.preferredLanguage),
                     ),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(50),
@@ -815,8 +816,8 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
                       ),
                 label: Text(
                   _isSubmitting
-                      ? 'Checking...'
-                      : 'Submit Answer',
+                      ? L10n.get('checking', widget.session.preferredLanguage)
+                      : L10n.get('submitAnswer', widget.session.preferredLanguage),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,

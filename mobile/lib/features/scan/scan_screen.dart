@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/models/discharge_request.dart';
 import '../../core/services/discharge_api.dart';
+import '../../core/l10n.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
@@ -25,6 +26,7 @@ class _ScanScreenState extends State<ScanScreen> {
   File? _selectedImage;
   bool _isProcessing = false; // true while OCR is running
   bool _isSubmitting = false; // true while we're waiting on the backend
+  String _selectedLanguage = 'en';
 
   Future<void> _pickImage(ImageSource source) async {
     final XFile? image = await _picker.pickImage(source: source);
@@ -57,7 +59,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Could not read the image: $e'),
+          content: Text('${L10n.get('couldNotRead', _selectedLanguage)}$e'),
         ),
       );
     }
@@ -68,9 +70,9 @@ class _ScanScreenState extends State<ScanScreen> {
 
     if (dischargeText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Please scan or enter your discharge instructions.',
+            L10n.get('pleaseScan', _selectedLanguage),
           ),
         ),
       );
@@ -79,7 +81,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
     final request = DischargeRequest(
       patientId: 'P001',
-      preferredLanguage: 'en',
+      preferredLanguage: _selectedLanguage,
       dischargeText: dischargeText,
     );
 
@@ -98,7 +100,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Something went wrong: $e'),
+          content: Text('${L10n.get('somethingWentWrong', _selectedLanguage)}$e'),
         ),
       );
     } finally {
@@ -123,16 +125,38 @@ class _ScanScreenState extends State<ScanScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scan Discharge'),
+        title: Text(L10n.get('scanDischarge', _selectedLanguage)),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: DropdownButton<String>(
+              value: _selectedLanguage,
+              underline: const SizedBox(),
+              icon: const Icon(Icons.language, color: Colors.black87),
+              items: const [
+                DropdownMenuItem(value: 'en', child: Text('English')),
+                DropdownMenuItem(value: 'hi', child: Text('Hindi')),
+                DropdownMenuItem(value: 'ta', child: Text('Tamil')),
+              ],
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    _selectedLanguage = newValue;
+                  });
+                }
+              },
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Scan your discharge instructions',
-              style: TextStyle(
+            Text(
+              L10n.get('scanInstructions', _selectedLanguage),
+              style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
@@ -140,8 +164,8 @@ class _ScanScreenState extends State<ScanScreen> {
 
             const SizedBox(height: 8),
 
-            const Text(
-              'Take a photo or choose an image of your discharge sheet.',
+            Text(
+              L10n.get('takePhoto', _selectedLanguage),
             ),
 
             const SizedBox(height: 24),
@@ -153,7 +177,7 @@ class _ScanScreenState extends State<ScanScreen> {
                     onPressed:
                         isBusy ? null : () => _pickImage(ImageSource.camera),
                     icon: const Icon(Icons.camera_alt),
-                    label: const Text('Camera'),
+                    label: Text(L10n.get('camera', _selectedLanguage)),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -162,7 +186,7 @@ class _ScanScreenState extends State<ScanScreen> {
                     onPressed:
                         isBusy ? null : () => _pickImage(ImageSource.gallery),
                     icon: const Icon(Icons.photo_library),
-                    label: const Text('Gallery'),
+                    label: Text(L10n.get('gallery', _selectedLanguage)),
                   ),
                 ),
               ],
@@ -183,9 +207,9 @@ class _ScanScreenState extends State<ScanScreen> {
 
             if (_selectedImage != null) const SizedBox(height: 24),
 
-            const Text(
-              'Review extracted text',
-              style: TextStyle(
+            Text(
+              L10n.get('reviewText', _selectedLanguage),
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
@@ -193,8 +217,8 @@ class _ScanScreenState extends State<ScanScreen> {
 
             const SizedBox(height: 8),
 
-            const Text(
-              'You can edit the text if OCR made a mistake.',
+            Text(
+              L10n.get('editIfMistake', _selectedLanguage),
             ),
 
             const SizedBox(height: 12),
@@ -212,7 +236,7 @@ class _ScanScreenState extends State<ScanScreen> {
                 maxLines: 10,
                 enabled: !_isSubmitting,
                 decoration: InputDecoration(
-                  hintText: 'Extracted discharge instructions...',
+                  hintText: L10n.get('extractedHint', _selectedLanguage),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -232,7 +256,7 @@ class _ScanScreenState extends State<ScanScreen> {
                         width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Text('Continue to Teach-back'),
+                    : Text(L10n.get('continueTeachBack', _selectedLanguage)),
               ),
             ),
           ],

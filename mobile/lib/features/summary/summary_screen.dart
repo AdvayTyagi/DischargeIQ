@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 
 import '../../core/models/session.dart';
+import '../../core/l10n.dart';
 
 class SummaryScreen extends StatefulWidget {
   final DischargeSession session;
@@ -88,7 +89,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Your Instructions, Simplified'),
+        title: Text(L10n.get('simplifiedTitle', widget.session.preferredLanguage)),
       ),
       body: SafeArea(
         child: Padding(
@@ -96,9 +97,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Here’s what you need to know',
-                style: TextStyle(
+              Text(
+                L10n.get('heresWhatYouNeed', widget.session.preferredLanguage),
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -107,7 +108,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
               const SizedBox(height: 8),
 
               Text(
-                'The key points from your discharge instructions.',
+                L10n.get('keyPoints', widget.session.preferredLanguage),
                 style: TextStyle(
                   fontSize: 15,
                   color: Colors.grey.shade600,
@@ -145,8 +146,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
                   ),
                   label: Text(
                     _isSpeaking
-                        ? 'Stop Reading'
-                        : 'Read Instructions Aloud',
+                        ? L10n.get('stopReading', widget.session.preferredLanguage)
+                        : L10n.get('readInstructions', widget.session.preferredLanguage),
                   ),
                 ),
               ),
@@ -163,9 +164,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
                       extra: widget.session,
                     );
                   },
-                  child: const Text(
-                    'Continue to Teach-back',
-                    style: TextStyle(fontSize: 16),
+                  child: Text(
+                    L10n.get('continueTeachBack', widget.session.preferredLanguage),
+                    style: const TextStyle(fontSize: 16),
                   ),
                 ),
               ),

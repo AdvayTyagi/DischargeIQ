@@ -15,91 +15,135 @@ class TeachbackScreen extends StatefulWidget {
   });
 
   @override
-  State<TeachbackScreen> createState() => _TeachbackScreenState();
+  State<TeachbackScreen> createState() =>
+      _TeachbackScreenState();
 }
 
-class _TeachbackScreenState extends State<TeachbackScreen> {
-  // ---------------------------------------------------------------
-  // Question rules
-  // ---------------------------------------------------------------
+class _TeachbackScreenState
+    extends State<TeachbackScreen> {
+  final stt.SpeechToText _speech =
+      stt.SpeechToText();
 
-  static const int _minTotalQuestions = 5;
-  static const int _maxTotalQuestions = 10;
-  static const int _maxAttemptsPerQuestion = 3;
+  final FlutterTts _tts =
+      FlutterTts();
 
-  // ---------------------------------------------------------------
-  // Voice services
-  // ---------------------------------------------------------------
+  final TextEditingController _answerController =
+      TextEditingController();
 
-  final FlutterTts _tts = FlutterTts();
-  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _speechAvailable = false;
+  bool _isListening = false;
+  bool _isSubmitting = false;
 
-  late List<TeachBackQuestion> _queue;
+  String _transcript = '';
+
+  final List<TeachBackQuestion> _queue = [];
 
   int _totalAsked = 0;
 
-  bool _isSubmitting = false;
-  bool _isListening = false;
-  bool _speechAvailable = false;
-
-  String _transcript = '';
+  static const int _maxAttemptsPerQuestion = 2;
+  static const int _maxTotalQuestions = 8;
+  static const int _minTotalQuestions = 5;
 
   @override
   void initState() {
     super.initState();
 
-    _queue = List.from(widget.session.teachBackQuestions);
-    _fillUpToMinimumIfNeeded();
-
-    _initializeVoice();
+    _initializeSpeech();
+    _initializeQuestions();
   }
 
   // ---------------------------------------------------------------
-  // Voice initialization
+  // INITIALIZATION
   // ---------------------------------------------------------------
 
-  Future<void> _initializeVoice() async {
-    await _tts.setSpeechRate(0.45);
-    await _tts.setVolume(1.0);
-    await _tts.setPitch(1.0);
+  Future<void> _initializeSpeech() async {
+    try {
+      final available = await _speech.initialize(
+        onStatus: (status) {
+          if (!mounted) return;
 
-    final available = await _speech.initialize(
-      onStatus: (status) {
-        if (!mounted) return;
+          if (status == 'done' ||
+              status == 'notListening') {
+            setState(() {
+              _isListening = false;
+            });
+          }
+        },
+        onError: (error) {
+          if (!mounted) return;
 
-        if (status == 'done' || status == 'notListening') {
           setState(() {
             _isListening = false;
           });
-        }
-      },
-      onError: (error) {
-        if (!mounted) return;
 
-        setState(() {
-          _isListening = false;
-        });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Speech recognition error: ${error.errorMsg}',
+              ),
+            ),
+          );
+        },
+      );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Speech recognition error: ${error.errorMsg}'),
-          ),
-        );
-      },
+      if (!mounted) return;
+
+      setState(() {
+        _speechAvailable = available;
+      });
+
+      await _tts.setSpeechRate(0.45);
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _speechAvailable = false;
+      });
+    }
+  }
+
+  void _initializeQuestions() {
+    final original =
+        List<TeachBackQuestion>.from(
+      widget.session.teachBackQuestions,
     );
 
-    if (!mounted) return;
+    _queue.clear();
 
-    setState(() {
-      _speechAvailable = available;
-    });
+    _queue.addAll(original);
 
-    // Read the first question aloud automatically.
-    await _speakQuestion();
+    if (original.isEmpty) {
+      return;
+    }
+
+    int i = 0;
+
+    while (_queue.length < _minTotalQuestions) {
+      _queue.add(
+        original[i % original.length],
+      );
+
+      i++;
+    }
+
+    if (_queue.length > _maxTotalQuestions) {
+      _queue.removeRange(
+        _maxTotalQuestions,
+        _queue.length,
+      );
+    }
   }
 
   // ---------------------------------------------------------------
-  // Text-to-speech
+  // CURRENT QUESTION
+  // ---------------------------------------------------------------
+
+  TeachBackQuestion get _currentQuestion {
+    return _queue.first;
+  }
+
+  // ---------------------------------------------------------------
+  // TEXT TO SPEECH
   // ---------------------------------------------------------------
 
   Future<void> _speakQuestion() async {
@@ -107,17 +151,47 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
 
     await _tts.stop();
 
-    await _tts.speak(_currentQuestion.question);
+    await _tts.speak(
+      _currentQuestion.question,
+    );
+  }
+
+  Future<void> _speakAgain() async {
+    _clearAnswer();
+
+    await _tts.stop();
+
+    await _speakQuestion();
   }
 
   // ---------------------------------------------------------------
-  // Speech-to-text
+  // ANSWER INPUT
+  // ---------------------------------------------------------------
+
+  void _clearAnswer() {
+    _answerController.clear();
+
+    if (mounted) {
+      setState(() {
+        _transcript = '';
+      });
+    }
+  }
+
+  void _updateAnswer(String value) {
+    setState(() {
+      _transcript = value;
+    });
+  }
+
+  // ---------------------------------------------------------------
+  // SPEECH TO TEXT
   // ---------------------------------------------------------------
 
   Future<void> _startListening() async {
-    if (_isSubmitting) return;
-
     if (!_speechAvailable) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
@@ -125,27 +199,44 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
           ),
         ),
       );
+
       return;
     }
 
     await _tts.stop();
 
+    // Start with a clean answer when speaking.
+    _answerController.clear();
+
     setState(() {
-      _transcript = '';
       _isListening = true;
+      _transcript = '';
     });
 
     await _speech.listen(
       onResult: (result) {
         if (!mounted) return;
 
+        final words =
+            result.recognizedWords;
+
+        _answerController.value =
+            TextEditingValue(
+          text: words,
+          selection:
+              TextSelection.collapsed(
+            offset: words.length,
+          ),
+        );
+
         setState(() {
-          _transcript = result.recognizedWords;
+          _transcript = words;
         });
       },
       listenOptions: stt.SpeechListenOptions(
         partialResults: true,
-        listenMode: stt.ListenMode.dictation,
+        listenMode:
+            stt.ListenMode.confirmation,
       ),
     );
   }
@@ -161,37 +252,22 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
   }
 
   // ---------------------------------------------------------------
-  // Question queue
-  // ---------------------------------------------------------------
-
-  TeachBackQuestion get _currentQuestion => _queue.first;
-
-  void _fillUpToMinimumIfNeeded() {
-    if (_queue.isEmpty) return;
-
-    final original = List<TeachBackQuestion>.from(_queue);
-
-    int i = 0;
-
-    while (_queue.length < _minTotalQuestions) {
-      _queue.add(original[i % original.length]);
-      i++;
-    }
-  }
-
-  // ---------------------------------------------------------------
-  // Submit voice transcript
+  // SUBMIT ANSWER
   // ---------------------------------------------------------------
 
   Future<void> _submitAnswer() async {
-    final answer = _transcript.trim();
+    final answer =
+        _answerController.text.trim();
 
     if (answer.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please speak your answer first.'),
+          content: Text(
+            'Please type or speak your answer first.',
+          ),
         ),
       );
+
       return;
     }
 
@@ -205,31 +281,74 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
       _isSubmitting = true;
     });
 
-    final question = _currentQuestion;
+    final question =
+        _currentQuestion;
 
     try {
-      await DischargeApi.gradeAnswer(
+      final gradeResponse =
+          await DischargeApi.gradeAnswer(
         session: widget.session,
         question: question,
         patientAnswer: answer,
       );
 
-      question.attempts += 1;
+      // DischargeApi.gradeAnswer() already updates:
+      //
+      // question.patientAnswer
+      // question.correct
+      // question.score
+      // question.feedback
+      // question.correctAnswer
+      // question.attempts
+      //
+      // Do NOT increment question.attempts here.
+
       _totalAsked += 1;
 
       if (!mounted) return;
 
       setState(() {
-        _queue.removeAt(0);
+        _isSubmitting = false;
+      });
 
-        final gotItWrong = question.correct == false;
-        final canRetry = question.attempts < _maxAttemptsPerQuestion;
-        final underCap = _totalAsked < _maxTotalQuestions;
+      // -------------------------------------------------------------
+      // INCORRECT ANSWER
+      // -------------------------------------------------------------
 
-        if (gotItWrong && canRetry && underCap) {
-          _queue.add(question);
+      if (!gradeResponse.correct) {
+        await _showIncorrectAnswerDialog(
+          question,
+        );
+
+        if (!mounted) return;
+
+        final canRetry =
+            question.attempts <
+                _maxAttemptsPerQuestion;
+
+        final underCap =
+            _totalAsked <
+                _maxTotalQuestions;
+
+        if (canRetry && underCap) {
+          setState(() {
+            _queue.removeAt(0);
+            _queue.add(question);
+            _answerController.clear();
+            _transcript = '';
+          });
+
+          return;
         }
+      }
 
+      // -------------------------------------------------------------
+      // CORRECT ANSWER OR NO MORE RETRIES
+      // -------------------------------------------------------------
+
+      setState(() {
+        _queue.removeAt(0);
+        _answerController.clear();
         _transcript = '';
       });
 
@@ -244,305 +363,570 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
         return;
       }
 
-      // Automatically read the next question.
       await _speakQuestion();
-    } catch (e) {
+    } catch (error) {
       if (!mounted) return;
 
+      setState(() {
+        _isSubmitting = false;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Could not grade that answer: $e'),
+        const SnackBar(
+          content: Text(
+            'Could not check your answer. Please try again.',
+          ),
         ),
       );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
     }
   }
 
   // ---------------------------------------------------------------
-  // Speak again
+  // INCORRECT ANSWER DIALOG
   // ---------------------------------------------------------------
 
-  Future<void> _speakAgain() async {
-    await _stopListening();
+  Future<void> _showIncorrectAnswerDialog(
+    TeachBackQuestion question,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(
+                Icons.cancel,
+                color: Colors.red,
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Not quite',
+                ),
+              ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                if (question.patientAnswer !=
+                    null) ...[
+                  const Text(
+                    'Your answer:',
+                    style: TextStyle(
+                      fontWeight:
+                          FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    question.patientAnswer!,
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
-    setState(() {
-      _transcript = '';
-    });
+                if (question.feedback !=
+                    null) ...[
+                  const Text(
+                    'Feedback:',
+                    style: TextStyle(
+                      fontWeight:
+                          FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    question.feedback!,
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
-    await _speakQuestion();
+                if (question.correctAnswer !=
+                    null) ...[
+                  const Text(
+                    'Correct answer:',
+                    style: TextStyle(
+                      fontWeight:
+                          FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    question.correctAnswer!,
+                    style: const TextStyle(
+                      fontWeight:
+                          FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                'Continue',
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   // ---------------------------------------------------------------
-  // Cleanup
+  // DISPOSE
   // ---------------------------------------------------------------
 
   @override
   void dispose() {
-    _tts.stop();
     _speech.stop();
+    _tts.stop();
+    _answerController.dispose();
+
     super.dispose();
   }
 
   // ---------------------------------------------------------------
-  // UI
+  // BUILD
   // ---------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
     if (_queue.isEmpty) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'Teach-Back',
+          ),
+        ),
+        body: const Center(
+          child: Text(
+            'No teach-back questions available.',
+          ),
         ),
       );
     }
 
+    final question =
+        _currentQuestion;
+
+    final progress =
+        _totalAsked + 1;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Teach-back (question ${_totalAsked + 1})',
+        title: const Text(
+          'Teach-Back',
         ),
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Let’s check your understanding',
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
+        child: ListView(
+          padding:
+              const EdgeInsets.all(20),
+          children: [
+            // -------------------------------------------------------
+            // PROGRESS
+            // -------------------------------------------------------
+
+            Text(
+              'Question $progress',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight:
+                    FontWeight.w600,
+                color:
+                    Colors.grey.shade600,
               ),
+            ),
 
-              const SizedBox(height: 10),
+            const SizedBox(height: 8),
 
-              Text(
-                'Listen to the question and answer using your voice.',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.grey.shade600,
+            LinearProgressIndicator(
+              value:
+                  progress /
+                  _maxTotalQuestions,
+            ),
+
+            const SizedBox(height: 28),
+
+            // -------------------------------------------------------
+            // QUESTION
+            // -------------------------------------------------------
+
+            Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                borderRadius:
+                    BorderRadius.circular(
+                  16,
                 ),
+                color:
+                    Colors.grey.shade100,
               ),
-
-              const SizedBox(height: 24),
-
-              // ---------------------------------------------------
-              // QUESTION
-              // ---------------------------------------------------
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: Colors.grey.shade100,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment:
-                          MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Question',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-
-                        IconButton(
-                          tooltip: 'Read question aloud',
-                          onPressed:
-                              _isSubmitting ? null : _speakQuestion,
-                          icon: const Icon(Icons.volume_up),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    Text(
-                      _currentQuestion.question,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // ---------------------------------------------------
-              // VOICE AREA
-              // ---------------------------------------------------
-
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: _isListening
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.grey.shade300,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _isListening
-                            ? Icons.mic
-                            : Icons.mic_none,
-                        size: 64,
-                        color: _isListening
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.grey,
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      Text(
-                        _isListening
-                            ? 'Listening...'
-                            : 'Tap the microphone and speak',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      // Microphone button
-                      SizedBox(
-                        width: 80,
-                        height: 80,
-                        child: FloatingActionButton(
-                          onPressed: _isSubmitting
-                              ? null
-                              : (_isListening
-                                  ? _stopListening
-                                  : _startListening),
-                          child: Icon(
-                            _isListening
-                                ? Icons.stop
-                                : Icons.mic,
-                            size: 32,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // ------------------------------------------------
-                      // TRANSCRIPT
-                      // ------------------------------------------------
-
-                      if (_transcript.isNotEmpty) ...[
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Your answer:',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 8),
-
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            _transcript,
-                            style: const TextStyle(
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // ---------------------------------------------------
-              // BUTTONS
-              // ---------------------------------------------------
-
-              Row(
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _isSubmitting
-                          ? null
-                          : _speakAgain,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Speak Again'),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize:
-                            const Size.fromHeight(52),
-                      ),
+                  const Text(
+                    'Teach-back question',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight:
+                          FontWeight.bold,
                     ),
                   ),
 
-                  const SizedBox(width: 12),
+                  const SizedBox(height: 12),
 
-                  Expanded(
-                    child: ElevatedButton.icon(
+                  Text(
+                    question.question,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight:
+                          FontWeight.w600,
+                      height: 1.4,
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child:
+                        OutlinedButton.icon(
                       onPressed:
-                          _isSubmitting || _transcript.trim().isEmpty
+                          _isSubmitting
                               ? null
-                              : _submitAnswer,
-                      icon: _isSubmitting
-                          ? const SizedBox(
-                              height: 18,
-                              width: 18,
-                              child:
-                                  CircularProgressIndicator(
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Icon(Icons.check),
-                      label: Text(
-                        _isSubmitting
-                            ? 'Checking...'
-                            : 'Continue',
+                              : _speakQuestion,
+                      icon: const Icon(
+                        Icons.volume_up,
                       ),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize:
-                            const Size.fromHeight(52),
+                      label: const Text(
+                        'Read Question Aloud',
                       ),
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // -------------------------------------------------------
+            // TYPE OR SPEAK
+            // -------------------------------------------------------
+
+            const Text(
+              'Your answer',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight:
+                    FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            Text(
+              'Type your answer or use the microphone.',
+              style: TextStyle(
+                fontSize: 14,
+                color:
+                    Colors.grey.shade600,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // -------------------------------------------------------
+            // TEXT INPUT
+            // -------------------------------------------------------
+
+            TextField(
+              controller:
+                  _answerController,
+              enabled:
+                  !_isSubmitting,
+              maxLines: 4,
+              textInputAction:
+                  TextInputAction.done,
+              onChanged:
+                  _updateAnswer,
+              decoration:
+                  InputDecoration(
+                hintText:
+                    'Type your answer here...',
+                border:
+                    OutlineInputBorder(
+                  borderRadius:
+                      BorderRadius.circular(
+                    12,
+                  ),
+                ),
+                enabledBorder:
+                    OutlineInputBorder(
+                  borderRadius:
+                      BorderRadius.circular(
+                    12,
+                  ),
+                  borderSide:
+                      BorderSide(
+                    color: Colors
+                        .grey
+                        .shade300,
+                  ),
+                ),
+                focusedBorder:
+                    OutlineInputBorder(
+                  borderRadius:
+                      BorderRadius.circular(
+                    12,
+                  ),
+                  borderSide:
+                      BorderSide(
+                    color: Theme.of(
+                      context,
+                    )
+                        .colorScheme
+                        .primary,
+                    width: 2,
+                  ),
+                ),
+                suffixIcon:
+                    _answerController
+                            .text
+                            .isNotEmpty
+                        ? IconButton(
+                            onPressed:
+                                _isSubmitting
+                                    ? null
+                                    : _clearAnswer,
+                            icon:
+                                const Icon(
+                              Icons.clear,
+                            ),
+                          )
+                        : null,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // -------------------------------------------------------
+            // SPEECH AREA
+            // -------------------------------------------------------
+
+            Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                borderRadius:
+                    BorderRadius.circular(
+                  16,
+                ),
+                border: Border.all(
+                  color: _isListening
+                      ? Theme.of(context)
+                          .colorScheme
+                          .primary
+                      : Colors.grey.shade300,
+                  width: 2,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    _isListening
+                        ? Icons.mic
+                        : Icons.mic_none,
+                    size: 48,
+                    color: _isListening
+                        ? Theme.of(context)
+                            .colorScheme
+                            .primary
+                        : Colors.grey,
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  Text(
+                    _isListening
+                        ? 'Listening...'
+                        : 'Speak your answer',
+                    textAlign:
+                        TextAlign.center,
+                    style:
+                        const TextStyle(
+                      fontSize: 16,
+                      fontWeight:
+                          FontWeight.w600,
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // -------------------------------------------------
+                  // MICROPHONE BUTTON
+                  // -------------------------------------------------
+
+                  SizedBox(
+                    width: 72,
+                    height: 72,
+                    child:
+                        FloatingActionButton(
+                      onPressed:
+                          _isSubmitting
+                              ? null
+                              : (_isListening
+                                  ? _stopListening
+                                  : _startListening),
+                      child: Icon(
+                        _isListening
+                            ? Icons.stop
+                            : Icons.mic,
+                        size: 30,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Text(
+                    _isListening
+                        ? 'Tap stop when you are finished.'
+                        : 'Your spoken answer will appear in the text box above.',
+                    textAlign:
+                        TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color:
+                          Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // -------------------------------------------------------
+            // SPEAK AGAIN / CLEAR
+            // -------------------------------------------------------
+
+            Row(
+              children: [
+                Expanded(
+                  child:
+                      OutlinedButton.icon(
+                    onPressed:
+                        _isSubmitting
+                            ? null
+                            : _speakAgain,
+                    icon: const Icon(
+                      Icons.volume_up,
+                    ),
+                    label: const Text(
+                      'Question Again',
+                    ),
+                    style:
+                        OutlinedButton.styleFrom(
+                      minimumSize:
+                          const Size
+                              .fromHeight(
+                        50,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(width: 12),
+
+                Expanded(
+                  child:
+                      OutlinedButton.icon(
+                    onPressed:
+                        _isSubmitting ||
+                                _answerController
+                                    .text
+                                    .isEmpty
+                            ? null
+                            : _clearAnswer,
+                    icon: const Icon(
+                      Icons.clear,
+                    ),
+                    label: const Text(
+                      'Clear',
+                    ),
+                    style:
+                        OutlinedButton.styleFrom(
+                      minimumSize:
+                          const Size
+                              .fromHeight(
+                        50,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // -------------------------------------------------------
+            // SUBMIT
+            // -------------------------------------------------------
+
+            SizedBox(
+              width: double.infinity,
+              height: 54,
+              child:
+                  ElevatedButton.icon(
+                onPressed:
+                    _isSubmitting ||
+                            _answerController
+                                .text
+                                .trim()
+                                .isEmpty
+                        ? null
+                        : _submitAnswer,
+                icon: _isSubmitting
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child:
+                            CircularProgressIndicator(
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Icon(
+                        Icons.check,
+                      ),
+                label: Text(
+                  _isSubmitting
+                      ? 'Checking...'
+                      : 'Submit Answer',
+                  style:
+                      const TextStyle(
+                    fontSize: 16,
+                    fontWeight:
+                        FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+          ],
         ),
       ),
     );

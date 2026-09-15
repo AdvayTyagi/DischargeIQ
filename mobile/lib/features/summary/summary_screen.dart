@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 import '../../core/models/session.dart';
 
-class SummaryScreen extends StatelessWidget {
+class SummaryScreen extends StatefulWidget {
   final DischargeSession session;
 
-  // If the backend gives us more than this many points, we only show
-  // the first few — the idea is a short, scannable list, not a wall
-  // of bullets. If it gives us fewer, we just show what we have.
   static const int _maxPointsToShow = 5;
 
   const SummaryScreen({
@@ -17,10 +15,75 @@ class SummaryScreen extends StatelessWidget {
   });
 
   @override
+  State<SummaryScreen> createState() => _SummaryScreenState();
+}
+
+class _SummaryScreenState extends State<SummaryScreen> {
+  final FlutterTts _tts = FlutterTts();
+
+  bool _isSpeaking = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _tts.setCompletionHandler(() {
+      if (!mounted) return;
+
+      setState(() {
+        _isSpeaking = false;
+      });
+    });
+  }
+
+  Future<void> _speakInstructions() async {
+    final points = widget.session.simplifiedInstructions
+        .take(SummaryScreen._maxPointsToShow)
+        .toList();
+
+    if (points.isEmpty) {
+      return;
+    }
+
+    final text = points
+        .asMap()
+        .entries
+        .map((entry) => '${entry.key + 1}. ${entry.value}')
+        .join('. ');
+
+    await _tts.stop();
+
+    await _tts.setSpeechRate(0.45);
+
+    if (!mounted) return;
+
+    setState(() {
+      _isSpeaking = true;
+    });
+
+    await _tts.speak(text);
+  }
+
+  Future<void> _stopSpeaking() async {
+    await _tts.stop();
+
+    if (!mounted) return;
+
+    setState(() {
+      _isSpeaking = false;
+    });
+  }
+
+  @override
+  void dispose() {
+    _tts.stop();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Take at most _maxPointsToShow items from the full list.
-    final pointsToShow = session.simplifiedInstructions
-        .take(_maxPointsToShow)
+    final pointsToShow = widget.session.simplifiedInstructions
+        .take(SummaryScreen._maxPointsToShow)
         .toList();
 
     return Scaffold(
@@ -53,8 +116,6 @@ class SummaryScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // Expanded + ListView so this scrolls if the list is long
-              // on a small screen, instead of overflowing.
               Expanded(
                 child: ListView.separated(
                   itemCount: pointsToShow.length,
@@ -73,10 +134,34 @@ class SummaryScreen extends StatelessWidget {
 
               SizedBox(
                 width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _isSpeaking
+                      ? _stopSpeaking
+                      : _speakInstructions,
+                  icon: Icon(
+                    _isSpeaking
+                        ? Icons.stop
+                        : Icons.volume_up,
+                  ),
+                  label: Text(
+                    _isSpeaking
+                        ? 'Stop Reading'
+                        : 'Read Instructions Aloud',
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              SizedBox(
+                width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
                   onPressed: () {
-                    context.push('/teachback', extra: session);
+                    context.push(
+                      '/teachback',
+                      extra: widget.session,
+                    );
                   },
                   child: const Text(
                     'Continue to Teach-back',
@@ -92,8 +177,6 @@ class SummaryScreen extends StatelessWidget {
   }
 }
 
-// One numbered row: a circle with the number, and the point's text next
-// to it. Pulled out as its own small widget just to keep build() tidy.
 class _SimplifiedPoint extends StatelessWidget {
   final int number;
   final String text;
@@ -126,11 +209,16 @@ class _SimplifiedPoint extends StatelessWidget {
               ),
             ),
           ),
+
           const SizedBox(width: 12),
+
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(fontSize: 15, height: 1.4),
+              style: const TextStyle(
+                fontSize: 15,
+                height: 1.4,
+              ),
             ),
           ),
         ],

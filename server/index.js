@@ -22,17 +22,13 @@ const {
 
 const app = express();
 
-const PORT = process.env.PORT || 3000;
-
-// --------------------------------------------------
-// Middleware
-// --------------------------------------------------
-
 app.use(cors());
 app.use(express.json());
 
+const PORT = process.env.PORT || 3000;
+
 // --------------------------------------------------
-// Health Check
+// GET /health
 // --------------------------------------------------
 
 app.get("/health", (req, res) => {
@@ -43,28 +39,19 @@ app.get("/health", (req, res) => {
 });
 
 // --------------------------------------------------
-// Helper: Validate Required String
+// Helpers
 // --------------------------------------------------
 
-function requireString(body, fieldName) {
-  if (!(fieldName in body)) {
-    return `Missing required field: ${fieldName}`;
-  }
-
-  if (typeof body[fieldName] !== "string") {
-    return `${fieldName} must be a string`;
-  }
-
-  if (body[fieldName].trim() === "") {
-    return `${fieldName} cannot be empty`;
+function requireString(body, field) {
+  if (
+    typeof body[field] !== "string" ||
+    body[field].trim() === ""
+  ) {
+    return `${field} is required and must be a non-empty string.`;
   }
 
   return null;
 }
-
-// --------------------------------------------------
-// Helper: Normalize text for fast grading
-// --------------------------------------------------
 
 function normalizeText(text) {
   return text
@@ -74,42 +61,65 @@ function normalizeText(text) {
     .trim();
 }
 
-// --------------------------------------------------
-// Helper: Remove common filler words
-// --------------------------------------------------
-
 function removeFillerWords(text) {
   const fillerWords = new Set([
-    "i",
-    "me",
-    "my",
-    "we",
-    "our",
-    "you",
-    "your",
-    "the",
     "a",
     "an",
-    "to",
-    "do",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "by",
+    "for",
+    "from",
+    "how",
+    "i",
+    "in",
+    "is",
+    "it",
+    "me",
+    "my",
+    "of",
+    "on",
+    "or",
     "should",
-    "need",
-    "have",
-    "has",
     "that",
-    "if",
-    "then"
+    "the",
+    "this",
+    "to",
+    "was",
+    "what",
+    "when",
+    "where",
+    "with",
+    "you",
+    "your"
   ]);
 
   return normalizeText(text)
     .split(" ")
-    .filter((word) => !fillerWords.has(word));
+    .filter(
+      (word) =>
+        word.length > 0 &&
+        !fillerWords.has(word)
+    );
 }
 
 // --------------------------------------------------
-// Helper: Check whether answer clearly appears
-// in the discharge instructions
+// FAST LOCAL GRADING
 // --------------------------------------------------
+//
+// This grader is intentionally conservative.
+//
+// If an answer is clearly represented in the
+// original discharge instructions, it can be
+// accepted immediately.
+//
+// If the answer is ambiguous or potentially wrong,
+// return null so Gemini can grade it and provide
+// the correctAnswer when necessary.
+//
 
 function fastGradeAnswer(
   dischargeText,
@@ -199,8 +209,9 @@ function fastGradeAnswer(
     return null;
   }
 
-  // If the answer is clearly represented in the
-  // discharge instructions, accept it immediately.
+  // The local grader only returns a positive result.
+  // Potentially incorrect or ambiguous answers go
+  // to Gemini for proper grading.
   return {
     patientId: null,
     correct: true,
@@ -221,8 +232,7 @@ app.post("/process-discharge", async (req, res) => {
       dischargeText
     } = req.body;
 
-    // Validate request
-
+    // Validate patient ID.
     const patientIdError =
       requireString(req.body, "patientId");
 
@@ -232,8 +242,12 @@ app.post("/process-discharge", async (req, res) => {
       });
     }
 
+    // Validate preferred language.
     const languageError =
-      requireString(req.body, "preferredLanguage");
+      requireString(
+        req.body,
+        "preferredLanguage"
+      );
 
     if (languageError) {
       return res.status(400).json({
@@ -241,8 +255,12 @@ app.post("/process-discharge", async (req, res) => {
       });
     }
 
+    // Validate discharge text.
     const dischargeTextError =
-      requireString(req.body, "dischargeText");
+      requireString(
+        req.body,
+        "dischargeText"
+      );
 
     if (dischargeTextError) {
       return res.status(400).json({
@@ -254,62 +272,52 @@ app.post("/process-discharge", async (req, res) => {
       `Processing discharge for patient ${patientId}`
     );
 
-    // Build LLM prompt
-
-    const prompt = buildProcessDischargePrompt(
-      patientId,
-      preferredLanguage,
-      dischargeText
-    );
-
-    // Ask Genimi for validated JSON
-
-    const result = await generateValidJson(
-      prompt,
-      validateProcessDischargeResponse,
-      3
-    );
-
-    // Make sure the model did not change identifiers
-
-    if (result.patientId !== patientId) {
-      console.error(
-        "LLM returned incorrect patientId."
+    const prompt =
+      buildProcessDischargePrompt(
+        patientId,
+        preferredLanguage,
+        dischargeText
       );
 
+    const result =
+      await generateValidJson(
+        prompt,
+        validateProcessDischargeResponse,
+        3
+      );
+
+    // Make sure Gemini returned the same
+    // patient ID that was requested.
+    if (result.patientId !== patientId) {
       return res.status(500).json({
         error:
-          "Unable to process discharge instructions"
+          "Gemini returned an incorrect patient ID."
       });
     }
 
+    // Make sure Gemini returned the requested
+    // preferred language.
     if (
       result.preferredLanguage !==
       preferredLanguage
     ) {
-      console.error(
-        "LLM returned incorrect preferredLanguage."
-      );
-
       return res.status(500).json({
         error:
-          "Unable to process discharge instructions"
+          "Gemini returned an incorrect preferred language."
       });
     }
 
-    // Return validated data
-
-    return res.status(200).json(result);
+    return res.json(result);
 
   } catch (error) {
     console.error(
-      "Process discharge error:",
-      error.message
+      "Error processing discharge:",
+      error
     );
 
     return res.status(500).json({
       error:
-        "Unable to process discharge instructions"
+        "Failed to process discharge instructions."
     });
   }
 });
@@ -328,8 +336,7 @@ app.post("/grade-answer", async (req, res) => {
       patientAnswer
     } = req.body;
 
-    // Validate request
-
+    // Validate patient ID.
     const patientIdError =
       requireString(req.body, "patientId");
 
@@ -339,8 +346,12 @@ app.post("/grade-answer", async (req, res) => {
       });
     }
 
+    // Validate preferred language.
     const languageError =
-      requireString(req.body, "preferredLanguage");
+      requireString(
+        req.body,
+        "preferredLanguage"
+      );
 
     if (languageError) {
       return res.status(400).json({
@@ -348,8 +359,12 @@ app.post("/grade-answer", async (req, res) => {
       });
     }
 
+    // Validate original discharge text.
     const dischargeTextError =
-      requireString(req.body, "dischargeText");
+      requireString(
+        req.body,
+        "dischargeText"
+      );
 
     if (dischargeTextError) {
       return res.status(400).json({
@@ -357,6 +372,7 @@ app.post("/grade-answer", async (req, res) => {
       });
     }
 
+    // Validate question.
     const questionError =
       requireString(req.body, "question");
 
@@ -366,12 +382,16 @@ app.post("/grade-answer", async (req, res) => {
       });
     }
 
-    const patientAnswerError =
-      requireString(req.body, "patientAnswer");
+    // Validate patient answer.
+    const answerError =
+      requireString(
+        req.body,
+        "patientAnswer"
+      );
 
-    if (patientAnswerError) {
+    if (answerError) {
       return res.status(400).json({
-        error: patientAnswerError
+        error: answerError
       });
     }
 
@@ -379,86 +399,125 @@ app.post("/grade-answer", async (req, res) => {
       `Grading teach-back answer for patient ${patientId}`
     );
 
-    // --------------------------------------------------
+    // ------------------------------------------------
     // FAST LOCAL CHECK
-    // --------------------------------------------------
+    // ------------------------------------------------
 
-    const fastResult = fastGradeAnswer(
-      dischargeText,
-      question,
-      patientAnswer
-    );
+    const fastResult =
+      fastGradeAnswer(
+        dischargeText,
+        question,
+        patientAnswer
+      );
 
     if (fastResult) {
       console.log(
         "Fast local grading: answer accepted."
       );
 
-      return res.status(200).json({
+      return res.json({
         patientId,
-        correct: fastResult.correct,
-        score: fastResult.score,
-        feedback: fastResult.feedback
+        correct: true,
+        score: 1,
+        feedback: "Correct."
       });
     }
+
+    // ------------------------------------------------
+    // LLM GRADING
+    // ------------------------------------------------
 
     console.log(
       "Answer requires LLM grading."
     );
 
-    // --------------------------------------------------
-    // LLM GRADING
-    // --------------------------------------------------
-
-    const prompt = buildGradeAnswerPrompt(
-      patientId,
-      preferredLanguage,
-      dischargeText,
-      question,
-      patientAnswer
-    );
-
-    const result = await generateValidJson(
-      prompt,
-      validateGradeAnswerResponse,
-      3
-    );
-
-    // Make sure the model returned
-    // the correct patient
-
-    if (result.patientId !== patientId) {
-      console.error(
-        "LLM returned incorrect patientId."
+    const prompt =
+      buildGradeAnswerPrompt(
+        patientId,
+        preferredLanguage,
+        dischargeText,
+        question,
+        patientAnswer
       );
 
+    const result =
+      await generateValidJson(
+        prompt,
+        validateGradeAnswerResponse,
+        3
+      );
+
+    // Make sure Gemini returned the same
+    // patient ID that was requested.
+    if (result.patientId !== patientId) {
       return res.status(500).json({
-        error: "Unable to grade answer"
+        error:
+          "Gemini returned an incorrect patient ID."
       });
     }
 
-    // Return validated result
+    // ------------------------------------------------
+    // NORMALIZE CORRECT ANSWERS
+    // ------------------------------------------------
+    //
+    // The app only needs correctAnswer when the
+    // patient's answer is incorrect.
+    //
 
-    return res.status(200).json(result);
+    if (result.correct === true) {
+      return res.json({
+        patientId,
+        correct: true,
+        score: 1,
+        feedback: result.feedback,
+        ...(result.correctAnswer
+          ? {
+              correctAnswer:
+                result.correctAnswer
+            }
+          : {})
+      });
+    }
+
+    // ------------------------------------------------
+    // INCORRECT ANSWER
+    // ------------------------------------------------
+    //
+    // The validator guarantees that an incorrect
+    // Gemini response contains correctAnswer.
+    //
+
+    return res.json({
+      patientId,
+      correct: false,
+      score: 0,
+      feedback: result.feedback,
+      correctAnswer: result.correctAnswer
+    });
 
   } catch (error) {
     console.error(
-      "Grade answer error:",
-      error.message
+      "Error grading answer:",
+      error
     );
 
     return res.status(500).json({
-      error: "Unable to grade answer"
+      error:
+        "Failed to grade teach-back answer."
     });
   }
 });
 
 // --------------------------------------------------
-// Start Server
+// START SERVER
 // --------------------------------------------------
 
-app.listen(PORT,"0.0.0.0", () => {
-  console.log(
-    `DischargeIQ server running on port ${PORT}`
-  );
-});
+app.listen(
+  PORT,
+  "0.0.0.0",
+  () => {
+    console.log(
+      `DischargeIQ server running on port ${PORT}`
+    );
+  }
+);

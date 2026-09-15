@@ -3,28 +3,22 @@
 // methods below, instead of writing its own network code.
 
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 
 import '../../core/models/discharge_request.dart';
+import '../../core/models/grade_answer_response.dart';
 import '../../core/models/session.dart';
 
 class DischargeApi {
   // -------------------------------------------------------------
-  // CHANGE THIS depending on how you're running the app:
-  //
-  // - Android emulator  -> keep it as 10.0.2.2
-  // - Physical Android phone (same wifi as your computer)
-  //      -> replace with your computer's actual network address,
-  //         e.g. "http://192.168.1.23:3000"
-  //         (find it by running `ipconfig` in a terminal on your PC
-  //         and looking for "IPv4 Address")
+  // Production backend deployed on Render.
   // -------------------------------------------------------------
-  static const String baseUrl = 'https://dischargeiq-backend.onrender.com';
+  static const String baseUrl =
+      'https://dischargeiq-backend.onrender.com';
 
   /// Sends the discharge text to the backend and returns a filled-in
   /// DischargeSession (simplified instructions + teach-back questions).
-  /// Throws an Exception if anything goes wrong — the calling screen
-  /// should catch this and show a normal error message to the user.
   static Future<DischargeSession> processDischarge(
     DischargeRequest request,
   ) async {
@@ -36,7 +30,8 @@ class DischargeApi {
 
     if (response.statusCode != 200) {
       throw Exception(
-        "Could not process discharge instructions (status ${response.statusCode}). "
+        "Could not process discharge instructions "
+        "(status ${response.statusCode}). "
         "Try again, or use the backup text if this keeps failing.",
       );
     }
@@ -44,10 +39,12 @@ class DischargeApi {
     final data = jsonDecode(response.body) as Map<String, dynamic>;
 
     final questions = (data['teachBackQuestions'] as List)
-        .map((q) => TeachBackQuestion(
-              id: q['id'] as String,
-              question: q['question'] as String,
-            ))
+        .map(
+          (q) => TeachBackQuestion(
+            id: q['id'] as String,
+            question: q['question'] as String,
+          ),
+        )
         .toList();
 
     return DischargeSession(
@@ -60,10 +57,17 @@ class DischargeApi {
     );
   }
 
-  /// Grades a single answer to a single question, and fills in the
-  /// answer/correct/score/feedback fields directly on that question object.
-  /// Call this once per question, not once for the whole session.
-  static Future<void> gradeAnswer({
+  /// Grades a single answer to a single question.
+  ///
+  /// The backend returns:
+  /// - correct
+  /// - score
+  /// - feedback
+  /// - correctAnswer
+  ///
+  /// Those values are copied directly onto the question so the Results
+  /// screen can display them.
+  static Future<GradeAnswerResponse> gradeAnswer({
     required DischargeSession session,
     required TeachBackQuestion question,
     required String patientAnswer,
@@ -82,17 +86,23 @@ class DischargeApi {
 
     if (response.statusCode != 200) {
       throw Exception(
-        "Could not grade this answer (status ${response.statusCode}).",
+        "Failed to grade answer: "
+        "${response.statusCode} ${response.body}",
       );
     }
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;
 
-    // Fill the answer/grade straight onto the question object that was
-    // passed in, so the calling screen doesn't have to do this itself.
+    final gradeResponse = GradeAnswerResponse.fromJson(data);
+
+    // Save the grading result directly onto this question.
     question.patientAnswer = patientAnswer;
-    question.correct = data['correct'] as bool;
-    question.score = data['score'] as int;
-    question.feedback = data['feedback'] as String;
+    question.correct = gradeResponse.correct;
+    question.score = gradeResponse.score;
+    question.feedback = gradeResponse.feedback;
+    question.correctAnswer = gradeResponse.correctAnswer;
+    question.attempts++;
+
+    return gradeResponse;
   }
 }

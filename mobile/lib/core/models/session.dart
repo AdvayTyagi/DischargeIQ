@@ -12,12 +12,16 @@ class TeachBackQuestion {
   final String id;
   final String question;
 
-  // These three start out null and get filled in after the patient
-  // answers this specific question and we call /grade-answer for it.
+  // These get filled in after the patient answers this specific
+  // question and we call /grade-answer for it.
   String? patientAnswer;
   bool? correct;
   int? score; // will be 0 or 1 once graded
   String? feedback;
+
+  // The correct answer returned by the backend when the patient's
+  // answer is incorrect.
+  String? correctAnswer;
 
   // How many times this exact question has been asked so far.
   // Starts at 0, goes up by 1 every time it's graded (right or wrong).
@@ -29,6 +33,7 @@ class TeachBackQuestion {
   });
 
   bool get isAnswered => patientAnswer != null;
+
   bool get isGraded => correct != null;
 }
 
@@ -61,6 +66,7 @@ class DischargeSession {
   (int correctCount, int totalGraded) get scoreSoFar {
     final graded = teachBackQuestions.where((q) => q.isGraded);
     final correctCount = graded.where((q) => q.correct == true).length;
+
     return (correctCount, graded.length);
   }
 }

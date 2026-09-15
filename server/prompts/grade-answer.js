@@ -28,6 +28,9 @@ IMPORTANT RULES:
 14. Do NOT use Markdown.
 15. Do NOT use code fences.
 16. Do NOT include any fields other than the required fields.
+17. Always provide the correct answer using ONLY the original discharge instructions and the teach-back question.
+18. The correctAnswer must directly answer the teach-back question.
+19. Do not invent information that is not present in the original discharge instructions.
 
 PATIENT ID:
 ${patientId}
@@ -50,7 +53,8 @@ Return JSON in EXACTLY this structure:
   "patientId": "${patientId}",
   "correct": true,
   "score": 1,
-  "feedback": "Correct."
+  "feedback": "Correct.",
+  "correctAnswer": "The correct answer from the original discharge instructions."
 }
 
 If the answer is incorrect, return:
@@ -59,7 +63,8 @@ If the answer is incorrect, return:
   "patientId": "${patientId}",
   "correct": false,
   "score": 0,
-  "feedback": "Brief explanation of what was incorrect."
+  "feedback": "Brief explanation of what was incorrect.",
+  "correctAnswer": "The correct answer from the original discharge instructions."
 }
 `;
 }

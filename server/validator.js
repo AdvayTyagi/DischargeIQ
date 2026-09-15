@@ -28,7 +28,10 @@ function validateProcessDischargeResponse(data) {
   }
 
   for (const instruction of data.simplifiedInstructions) {
-    if (typeof instruction !== "string" || instruction.trim() === "") {
+    if (
+      typeof instruction !== "string" ||
+      instruction.trim() === ""
+    ) {
       return false;
     }
   }
@@ -91,10 +94,24 @@ function validateGradeAnswerResponse(data) {
     return false;
   }
 
+  // An incorrect answer MUST include the correct answer.
+  if (data.correct === false) {
+    if (typeof data.correctAnswer !== "string") {
+      return false;
+    }
+
+    if (data.correctAnswer.trim() === "") {
+      return false;
+    }
+  }
+
   return true;
 }
 
-function validateClinicalFacts(originalText, simplifiedInstructions) {
+function validateClinicalFacts(
+  originalText,
+  simplifiedInstructions
+) {
   const simplifiedText =
     simplifiedInstructions.join(" ").toLowerCase();
 

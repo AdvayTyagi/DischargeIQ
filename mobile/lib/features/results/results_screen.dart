@@ -13,33 +13,31 @@ class ResultsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (correctCount, totalGraded) = session.scoreSoFar;
+
     final percent =
         totalGraded == 0 ? 0 : ((correctCount / totalGraded) * 100).round();
 
     // Simple overall verdict based on the percentage of correct answers.
     // The backend only gives right/wrong per question — this is where
     // that gets turned into an overall green/amber/red picture.
-    //final String verdict;
+
     final Color verdictColor;
     final IconData verdictIcon;
     final String title;
     final String message;
 
     if (percent >= 80) {
-      //verdict = 'green';
       verdictColor = Colors.green;
       verdictIcon = Icons.check_circle;
       title = 'Good Understanding';
       message =
           'You have demonstrated a good understanding of your discharge instructions.';
     } else if (percent >= 50) {
-      //verdict = 'amber';
       verdictColor = Colors.orange;
       verdictIcon = Icons.warning_amber_rounded;
       title = 'Needs Clarification';
       message = 'Some parts of your understanding may need reviewing.';
     } else {
-      //verdict = 'red';
       verdictColor = Colors.red;
       verdictIcon = Icons.error;
       title = 'Needs Attention';
@@ -57,7 +55,11 @@ class ResultsScreen extends StatelessWidget {
           children: [
             const SizedBox(height: 10),
 
-            Icon(verdictIcon, size: 90, color: verdictColor),
+            Icon(
+              verdictIcon,
+              size: 90,
+              color: verdictColor,
+            ),
 
             const SizedBox(height: 24),
 
@@ -100,7 +102,9 @@ class ResultsScreen extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+
                   const SizedBox(height: 8),
+
                   Text(
                     '$percent%',
                     style: const TextStyle(
@@ -108,7 +112,9 @@ class ResultsScreen extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+
                   const SizedBox(height: 4),
+
                   Text(
                     '$correctCount out of $totalGraded correct',
                     style: TextStyle(
@@ -149,11 +155,17 @@ class ResultsScreen extends StatelessWidget {
                     Row(
                       children: [
                         Icon(
-                          wasCorrect ? Icons.check_circle : Icons.cancel,
-                          color: wasCorrect ? Colors.green : Colors.red,
+                          wasCorrect
+                              ? Icons.check_circle
+                              : Icons.cancel,
+                          color: wasCorrect
+                              ? Colors.green
+                              : Colors.red,
                           size: 20,
                         ),
+
                         const SizedBox(width: 8),
+
                         Expanded(
                           child: Text(
                             q.question,
@@ -165,8 +177,10 @@ class ResultsScreen extends StatelessWidget {
                         ),
                       ],
                     ),
+
                     if (q.patientAnswer != null) ...[
                       const SizedBox(height: 8),
+
                       Text(
                         'Answer: ${q.patientAnswer}',
                         style: TextStyle(
@@ -175,8 +189,10 @@ class ResultsScreen extends StatelessWidget {
                         ),
                       ),
                     ],
+
                     if (q.feedback != null) ...[
                       const SizedBox(height: 6),
+
                       Text(
                         q.feedback!,
                         style: TextStyle(
@@ -186,8 +202,34 @@ class ResultsScreen extends StatelessWidget {
                         ),
                       ),
                     ],
+
+                    // Show the correct answer when the patient's answer
+                    // was incorrect.
+                    if (!wasCorrect && q.correctAnswer != null) ...[
+                      const SizedBox(height: 12),
+
+                      const Text(
+                        'Correct answer:',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      Text(
+                        q.correctAnswer!,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+
                     if (q.attempts > 1) ...[
                       const SizedBox(height: 6),
+
                       Text(
                         'Took ${q.attempts} tries',
                         style: TextStyle(
@@ -208,9 +250,13 @@ class ResultsScreen extends StatelessWidget {
               height: 52,
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  Navigator.of(context)
+                      .popUntil((route) => route.isFirst);
                 },
-                child: const Text('Done', style: TextStyle(fontSize: 16)),
+                child: const Text(
+                  'Done',
+                  style: TextStyle(fontSize: 16),
+                ),
               ),
             ),
 

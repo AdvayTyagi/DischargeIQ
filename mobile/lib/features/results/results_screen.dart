@@ -19,27 +19,27 @@ class ResultsScreen extends StatelessWidget {
     // Simple overall verdict based on the percentage of correct answers.
     // The backend only gives right/wrong per question — this is where
     // that gets turned into an overall green/amber/red picture.
-    final String verdict;
+    //final String verdict;
     final Color verdictColor;
     final IconData verdictIcon;
     final String title;
     final String message;
 
     if (percent >= 80) {
-      verdict = 'green';
+      //verdict = 'green';
       verdictColor = Colors.green;
       verdictIcon = Icons.check_circle;
       title = 'Good Understanding';
       message =
           'You have demonstrated a good understanding of your discharge instructions.';
     } else if (percent >= 50) {
-      verdict = 'amber';
+      //verdict = 'amber';
       verdictColor = Colors.orange;
       verdictIcon = Icons.warning_amber_rounded;
       title = 'Needs Clarification';
       message = 'Some parts of your understanding may need reviewing.';
     } else {
-      verdict = 'red';
+      //verdict = 'red';
       verdictColor = Colors.red;
       verdictIcon = Icons.error;
       title = 'Needs Attention';

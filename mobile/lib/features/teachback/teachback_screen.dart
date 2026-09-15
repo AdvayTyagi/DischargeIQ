@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/models/session.dart';
-import '../../core/services/discharge_api.dart';
+import '../../data/services/discharge_api_service.dart';
 
 class TeachbackScreen extends StatefulWidget {
   final DischargeSession session;

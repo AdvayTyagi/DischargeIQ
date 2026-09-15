@@ -5,8 +5,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-import '../models/discharge_request.dart';
-import '../models/session.dart';
+import '../../core/models/discharge_request.dart';
+import '../../core/models/session.dart';
 
 class DischargeApi {
   // -------------------------------------------------------------

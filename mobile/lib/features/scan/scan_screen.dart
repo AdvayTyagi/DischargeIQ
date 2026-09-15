@@ -6,7 +6,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/models/discharge_request.dart';
-import '../../core/services/discharge_api.dart';
+import '../../data/services/discharge_api_service.dart';
 
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});

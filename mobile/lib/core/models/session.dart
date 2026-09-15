@@ -19,6 +19,10 @@ class TeachBackQuestion {
   int? score; // will be 0 or 1 once graded
   String? feedback;
 
+  // How many times this exact question has been asked so far.
+  // Starts at 0, goes up by 1 every time it's graded (right or wrong).
+  int attempts = 0;
+
   TeachBackQuestion({
     required this.id,
     required this.question,

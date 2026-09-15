@@ -1,106 +1,143 @@
 import 'package:flutter/material.dart';
 
-import '../../core/models/teachback_session.dart';
+import '../../core/models/session.dart';
 
 class ResultsScreen extends StatelessWidget {
-  final TeachbackSession teachbackSession;
+  final DischargeSession session;
 
   const ResultsScreen({
     super.key,
-    required this.teachbackSession,
+    required this.session,
   });
 
   @override
   Widget build(BuildContext context) {
-    final grade = teachbackSession.gradeResponse;
+    final (correctCount, totalGraded) = session.scoreSoFar;
+    final percent =
+        totalGraded == 0 ? 0 : ((correctCount / totalGraded) * 100).round();
 
-    final bool isCorrect = grade.correct;
+    // Simple overall verdict based on the percentage of correct answers.
+    // The backend only gives right/wrong per question — this is where
+    // that gets turned into an overall green/amber/red picture.
+    final String verdict;
+    final Color verdictColor;
+    final IconData verdictIcon;
+    final String title;
+    final String message;
 
-    final String title = isCorrect
-        ? 'Good Understanding'
-        : 'Needs Clarification';
-
-    final String message = grade.feedback;
-
-    final IconData icon = isCorrect
-        ? Icons.check_circle
-        : Icons.warning_amber_rounded;
-
-    final int percentage = grade.score * 100;
+    if (percent >= 80) {
+      verdict = 'green';
+      verdictColor = Colors.green;
+      verdictIcon = Icons.check_circle;
+      title = 'Good Understanding';
+      message =
+          'You have demonstrated a good understanding of your discharge instructions.';
+    } else if (percent >= 50) {
+      verdict = 'amber';
+      verdictColor = Colors.orange;
+      verdictIcon = Icons.warning_amber_rounded;
+      title = 'Needs Clarification';
+      message = 'Some parts of your understanding may need reviewing.';
+    } else {
+      verdict = 'red';
+      verdictColor = Colors.red;
+      verdictIcon = Icons.error;
+      title = 'Needs Attention';
+      message =
+          'Please review your discharge instructions and speak with a healthcare professional if needed.';
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Results'),
       ),
       body: SafeArea(
-        child: Padding(
+        child: ListView(
           padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              const SizedBox(height: 30),
+          children: [
+            const SizedBox(height: 10),
 
-              Icon(
-                icon,
-                size: 90,
+            Icon(verdictIcon, size: 90, color: verdictColor),
+
+            const SizedBox(height: 24),
+
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
               ),
+            ),
 
-              const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+                height: 1.5,
               ),
+            ),
 
-              const SizedBox(height: 16),
+            const SizedBox(height: 30),
 
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade600,
-                  height: 1.5,
-                ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.grey.shade100,
               ),
-
-              const SizedBox(height: 30),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: Colors.grey.shade100,
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      'Understanding Score',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                      ),
+              child: Column(
+                children: [
+                  const Text(
+                    'Understanding Score',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '$percentage%',
-                      style: const TextStyle(
-                        fontSize: 36,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '$percent%',
+                    style: const TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$correctCount out of $totalGraded correct',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
               ),
+            ),
 
-              const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-              Container(
+            const Text(
+              'Question by question',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            ...session.teachBackQuestions.map((q) {
+              final bool wasCorrect = q.correct == true;
+
+              return Container(
                 width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
@@ -109,44 +146,76 @@ class ResultsScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Your teach-back answer',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Icon(
+                          wasCorrect ? Icons.check_circle : Icons.cancel,
+                          color: wasCorrect ? Colors.green : Colors.red,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            q.question,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      teachbackSession.answer,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        height: 1.4,
+                    if (q.patientAnswer != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Answer: ${q.patientAnswer}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade700,
+                        ),
                       ),
-                    ),
+                    ],
+                    if (q.feedback != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        q.feedback!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                    if (q.attempts > 1) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Took ${q.attempts} tries',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
-              ),
+              );
+            }),
 
-              const Spacer(),
+            const SizedBox(height: 20),
 
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).popUntil(
-                      (route) => route.isFirst,
-                    );
-                  },
-                  child: const Text(
-                    'Done',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
+                child: const Text('Done', style: TextStyle(fontSize: 16)),
               ),
-            ],
-          ),
+            ),
+
+            const SizedBox(height: 10),
+          ],
         ),
       ),
     );

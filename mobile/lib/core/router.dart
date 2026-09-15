@@ -1,7 +1,6 @@
 import 'package:go_router/go_router.dart';
-import '../core/models/process_discharge_response.dart';
-import '../core/models/discharge_request.dart';
-import '../core/models/teachback_session.dart';
+
+import '../core/models/session.dart';
 import '../features/auth/auth_screen.dart';
 import '../features/scan/scan_screen.dart';
 import '../features/teachback/teachback_screen.dart';
@@ -21,30 +20,25 @@ final appRouter = GoRouter(
     ),
 
     GoRoute(
-  path: '/teachback',
-  builder: (context, state) {
-    final data = state.extra as Map<String, dynamic>;
+      path: '/teachback',
+      builder: (context, state) {
+        final session = state.extra as DischargeSession;
 
-    final request = data['request'] as DischargeRequest;
-    final processResponse =
-        data['processResponse'] as ProcessDischargeResponse;
-
-    return TeachbackScreen(
-      dischargeRequest: request,
-      processResponse: processResponse,
-    );
-  },
-),
+        return TeachbackScreen(
+          session: session,
+        );
+      },
+    ),
 
     GoRoute(
-  path: '/results',
-  builder: (context, state) {
-    final session = state.extra as TeachbackSession;
+      path: '/results',
+      builder: (context, state) {
+        final session = state.extra as DischargeSession;
 
-    return ResultsScreen(
-      teachbackSession: session,
-    );
-  },
-),
+        return ResultsScreen(
+          session: session,
+        );
+      },
+    ),
   ],
 );

@@ -5,7 +5,7 @@ const cors = require("cors");
 
 const {
   generateValidJson
-} = require("./ollama");
+} = require("./gemini");
 
 const {
   validateProcessDischargeResponse,

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';ww
 import 'package:go_router/go_router.dart';
 
 class AuthScreen extends StatelessWidget {
@@ -17,7 +17,7 @@ class AuthScreen extends StatelessWidget {
 
               const Icon(
                 Icons.health_and_safety,
-                size: 64,
+                size: 76,
               ),
 
               const SizedBox(height: 24),

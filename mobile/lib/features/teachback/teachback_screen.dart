@@ -15,17 +15,13 @@ class TeachbackScreen extends StatefulWidget {
   });
 
   @override
-  State<TeachbackScreen> createState() =>
-      _TeachbackScreenState();
+  State<TeachbackScreen> createState() => _TeachbackScreenState();
 }
 
-class _TeachbackScreenState
-    extends State<TeachbackScreen> {
-  final stt.SpeechToText _speech =
-      stt.SpeechToText();
+class _TeachbackScreenState extends State<TeachbackScreen> {
+  final stt.SpeechToText _speech = stt.SpeechToText();
 
-  final FlutterTts _tts =
-      FlutterTts();
+  final FlutterTts _tts = FlutterTts();
 
   final TextEditingController _answerController =
       TextEditingController();
@@ -33,8 +29,6 @@ class _TeachbackScreenState
   bool _speechAvailable = false;
   bool _isListening = false;
   bool _isSubmitting = false;
-
-  String _transcript = '';
 
   final List<TeachBackQuestion> _queue = [];
 
@@ -53,6 +47,24 @@ class _TeachbackScreenState
   }
 
   // ---------------------------------------------------------------
+  // LANGUAGE
+  // ---------------------------------------------------------------
+
+  String _getLanguageCode() {
+    switch (widget.session.preferredLanguage) {
+      case 'hi':
+        return 'hi-IN';
+
+      case 'ta':
+        return 'ta-IN';
+
+      case 'en':
+      default:
+        return 'en-IN';
+    }
+  }
+
+  // ---------------------------------------------------------------
   // INITIALIZATION
   // ---------------------------------------------------------------
 
@@ -62,8 +74,7 @@ class _TeachbackScreenState
         onStatus: (status) {
           if (!mounted) return;
 
-          if (status == 'done' ||
-              status == 'notListening') {
+          if (status == 'done' || status == 'notListening') {
             setState(() {
               _isListening = false;
             });
@@ -103,8 +114,7 @@ class _TeachbackScreenState
   }
 
   void _initializeQuestions() {
-    final original =
-        List<TeachBackQuestion>.from(
+    final original = List<TeachBackQuestion>.from(
       widget.session.teachBackQuestions,
     );
 
@@ -151,6 +161,12 @@ class _TeachbackScreenState
 
     await _tts.stop();
 
+    await _tts.setLanguage(
+      _getLanguageCode(),
+    );
+
+    await _tts.setSpeechRate(0.45);
+
     await _tts.speak(
       _currentQuestion.question,
     );
@@ -172,16 +188,12 @@ class _TeachbackScreenState
     _answerController.clear();
 
     if (mounted) {
-      setState(() {
-        _transcript = '';
-      });
+      setState(() {});
     }
   }
 
   void _updateAnswer(String value) {
-    setState(() {
-      _transcript = value;
-    });
+    setState(() {});
   }
 
   // ---------------------------------------------------------------
@@ -205,38 +217,33 @@ class _TeachbackScreenState
 
     await _tts.stop();
 
-    // Start with a clean answer when speaking.
     _answerController.clear();
+
+    if (!mounted) return;
 
     setState(() {
       _isListening = true;
-      _transcript = '';
     });
 
     await _speech.listen(
       onResult: (result) {
         if (!mounted) return;
 
-        final words =
-            result.recognizedWords;
+        final words = result.recognizedWords;
 
-        _answerController.value =
-            TextEditingValue(
+        _answerController.value = TextEditingValue(
           text: words,
-          selection:
-              TextSelection.collapsed(
+          selection: TextSelection.collapsed(
             offset: words.length,
           ),
         );
 
-        setState(() {
-          _transcript = words;
-        });
+        setState(() {});
       },
       listenOptions: stt.SpeechListenOptions(
         partialResults: true,
-        listenMode:
-            stt.ListenMode.confirmation,
+        listenMode: stt.ListenMode.confirmation,
+        localeId: _getLanguageCode(),
       ),
     );
   }
@@ -256,8 +263,7 @@ class _TeachbackScreenState
   // ---------------------------------------------------------------
 
   Future<void> _submitAnswer() async {
-    final answer =
-        _answerController.text.trim();
+    final answer = _answerController.text.trim();
 
     if (answer.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -281,27 +287,14 @@ class _TeachbackScreenState
       _isSubmitting = true;
     });
 
-    final question =
-        _currentQuestion;
+    final question = _currentQuestion;
 
     try {
-      final gradeResponse =
-          await DischargeApi.gradeAnswer(
+      final gradeResponse = await DischargeApi.gradeAnswer(
         session: widget.session,
         question: question,
         patientAnswer: answer,
       );
-
-      // DischargeApi.gradeAnswer() already updates:
-      //
-      // question.patientAnswer
-      // question.correct
-      // question.score
-      // question.feedback
-      // question.correctAnswer
-      // question.attempts
-      //
-      // Do NOT increment question.attempts here.
 
       _totalAsked += 1;
 
@@ -323,19 +316,16 @@ class _TeachbackScreenState
         if (!mounted) return;
 
         final canRetry =
-            question.attempts <
-                _maxAttemptsPerQuestion;
+            question.attempts < _maxAttemptsPerQuestion;
 
         final underCap =
-            _totalAsked <
-                _maxTotalQuestions;
+            _totalAsked < _maxTotalQuestions;
 
         if (canRetry && underCap) {
           setState(() {
             _queue.removeAt(0);
             _queue.add(question);
             _answerController.clear();
-            _transcript = '';
           });
 
           return;
@@ -349,7 +339,6 @@ class _TeachbackScreenState
       setState(() {
         _queue.removeAt(0);
         _answerController.clear();
-        _transcript = '';
       });
 
       if (_queue.isEmpty) {
@@ -409,16 +398,13 @@ class _TeachbackScreenState
           ),
           content: SingleChildScrollView(
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (question.patientAnswer !=
-                    null) ...[
+                if (question.patientAnswer != null) ...[
                   const Text(
                     'Your answer:',
                     style: TextStyle(
-                      fontWeight:
-                          FontWeight.bold,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -427,14 +413,11 @@ class _TeachbackScreenState
                   ),
                   const SizedBox(height: 16),
                 ],
-
-                if (question.feedback !=
-                    null) ...[
+                if (question.feedback != null) ...[
                   const Text(
                     'Feedback:',
                     style: TextStyle(
-                      fontWeight:
-                          FontWeight.bold,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -443,22 +426,18 @@ class _TeachbackScreenState
                   ),
                   const SizedBox(height: 16),
                 ],
-
-                if (question.correctAnswer !=
-                    null) ...[
+                if (question.correctAnswer != null) ...[
                   const Text(
                     'Correct answer:',
                     style: TextStyle(
-                      fontWeight:
-                          FontWeight.bold,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     question.correctAnswer!,
                     style: const TextStyle(
-                      fontWeight:
-                          FontWeight.w500,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -514,11 +493,9 @@ class _TeachbackScreenState
       );
     }
 
-    final question =
-        _currentQuestion;
+    final question = _currentQuestion;
 
-    final progress =
-        _totalAsked + 1;
+    final progress = _totalAsked + 1;
 
     return Scaffold(
       appBar: AppBar(
@@ -528,8 +505,7 @@ class _TeachbackScreenState
       ),
       body: SafeArea(
         child: ListView(
-          padding:
-              const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
           children: [
             // -------------------------------------------------------
             // PROGRESS
@@ -539,19 +515,15 @@ class _TeachbackScreenState
               'Question $progress',
               style: TextStyle(
                 fontSize: 14,
-                fontWeight:
-                    FontWeight.w600,
-                color:
-                    Colors.grey.shade600,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade600,
               ),
             ),
 
             const SizedBox(height: 8),
 
             LinearProgressIndicator(
-              value:
-                  progress /
-                  _maxTotalQuestions,
+              value: progress / _maxTotalQuestions,
             ),
 
             const SizedBox(height: 28),
@@ -562,26 +534,19 @@ class _TeachbackScreenState
 
             Container(
               width: double.infinity,
-              padding:
-                  const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                borderRadius:
-                    BorderRadius.circular(
-                  16,
-                ),
-                color:
-                    Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.grey.shade100,
               ),
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
                     'Teach-back question',
                     style: TextStyle(
                       fontSize: 14,
-                      fontWeight:
-                          FontWeight.bold,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
 
@@ -591,8 +556,7 @@ class _TeachbackScreenState
                     question.question,
                     style: const TextStyle(
                       fontSize: 20,
-                      fontWeight:
-                          FontWeight.w600,
+                      fontWeight: FontWeight.w600,
                       height: 1.4,
                     ),
                   ),
@@ -601,12 +565,9 @@ class _TeachbackScreenState
 
                   SizedBox(
                     width: double.infinity,
-                    child:
-                        OutlinedButton.icon(
+                    child: OutlinedButton.icon(
                       onPressed:
-                          _isSubmitting
-                              ? null
-                              : _speakQuestion,
+                          _isSubmitting ? null : _speakQuestion,
                       icon: const Icon(
                         Icons.volume_up,
                       ),
@@ -629,8 +590,7 @@ class _TeachbackScreenState
               'Your answer',
               style: TextStyle(
                 fontSize: 16,
-                fontWeight:
-                    FontWeight.bold,
+                fontWeight: FontWeight.bold,
               ),
             ),
 
@@ -640,8 +600,7 @@ class _TeachbackScreenState
               'Type your answer or use the microphone.',
               style: TextStyle(
                 fontSize: 14,
-                color:
-                    Colors.grey.shade600,
+                color: Colors.grey.shade600,
               ),
             ),
 
@@ -652,66 +611,39 @@ class _TeachbackScreenState
             // -------------------------------------------------------
 
             TextField(
-              controller:
-                  _answerController,
-              enabled:
-                  !_isSubmitting,
+              controller: _answerController,
+              enabled: !_isSubmitting,
               maxLines: 4,
-              textInputAction:
-                  TextInputAction.done,
-              onChanged:
-                  _updateAnswer,
-              decoration:
-                  InputDecoration(
-                hintText:
-                    'Type your answer here...',
-                border:
-                    OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(
-                    12,
+              textInputAction: TextInputAction.done,
+              onChanged: _updateAnswer,
+              decoration: InputDecoration(
+                hintText: 'Type your answer here...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Colors.grey.shade300,
                   ),
                 ),
-                enabledBorder:
-                    OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(
-                    12,
-                  ),
-                  borderSide:
-                      BorderSide(
-                    color: Colors
-                        .grey
-                        .shade300,
-                  ),
-                ),
-                focusedBorder:
-                    OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(
-                    12,
-                  ),
-                  borderSide:
-                      BorderSide(
-                    color: Theme.of(
-                      context,
-                    )
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: Theme.of(context)
                         .colorScheme
                         .primary,
                     width: 2,
                   ),
                 ),
                 suffixIcon:
-                    _answerController
-                            .text
-                            .isNotEmpty
+                    _answerController.text.isNotEmpty
                         ? IconButton(
                             onPressed:
                                 _isSubmitting
                                     ? null
                                     : _clearAnswer,
-                            icon:
-                                const Icon(
+                            icon: const Icon(
                               Icons.clear,
                             ),
                           )
@@ -727,13 +659,9 @@ class _TeachbackScreenState
 
             Container(
               width: double.infinity,
-              padding:
-                  const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                borderRadius:
-                    BorderRadius.circular(
-                  16,
-                ),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
                   color: _isListening
                       ? Theme.of(context)
@@ -763,13 +691,10 @@ class _TeachbackScreenState
                     _isListening
                         ? 'Listening...'
                         : 'Speak your answer',
-                    textAlign:
-                        TextAlign.center,
-                    style:
-                        const TextStyle(
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
                       fontSize: 16,
-                      fontWeight:
-                          FontWeight.w600,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
 
@@ -782,14 +707,12 @@ class _TeachbackScreenState
                   SizedBox(
                     width: 72,
                     height: 72,
-                    child:
-                        FloatingActionButton(
-                      onPressed:
-                          _isSubmitting
-                              ? null
-                              : (_isListening
-                                  ? _stopListening
-                                  : _startListening),
+                    child: FloatingActionButton(
+                      onPressed: _isSubmitting
+                          ? null
+                          : (_isListening
+                              ? _stopListening
+                              : _startListening),
                       child: Icon(
                         _isListening
                             ? Icons.stop
@@ -805,12 +728,10 @@ class _TeachbackScreenState
                     _isListening
                         ? 'Tap stop when you are finished.'
                         : 'Your spoken answer will appear in the text box above.',
-                    textAlign:
-                        TextAlign.center,
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 12,
-                      color:
-                          Colors.grey.shade600,
+                      color: Colors.grey.shade600,
                     ),
                   ),
                 ],
@@ -826,25 +747,17 @@ class _TeachbackScreenState
             Row(
               children: [
                 Expanded(
-                  child:
-                      OutlinedButton.icon(
+                  child: OutlinedButton.icon(
                     onPressed:
-                        _isSubmitting
-                            ? null
-                            : _speakAgain,
+                        _isSubmitting ? null : _speakAgain,
                     icon: const Icon(
                       Icons.volume_up,
                     ),
                     label: const Text(
                       'Question Again',
                     ),
-                    style:
-                        OutlinedButton.styleFrom(
-                      minimumSize:
-                          const Size
-                              .fromHeight(
-                        50,
-                      ),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
                     ),
                   ),
                 ),
@@ -852,13 +765,10 @@ class _TeachbackScreenState
                 const SizedBox(width: 12),
 
                 Expanded(
-                  child:
-                      OutlinedButton.icon(
+                  child: OutlinedButton.icon(
                     onPressed:
                         _isSubmitting ||
-                                _answerController
-                                    .text
-                                    .isEmpty
+                                _answerController.text.isEmpty
                             ? null
                             : _clearAnswer,
                     icon: const Icon(
@@ -867,13 +777,8 @@ class _TeachbackScreenState
                     label: const Text(
                       'Clear',
                     ),
-                    style:
-                        OutlinedButton.styleFrom(
-                      minimumSize:
-                          const Size
-                              .fromHeight(
-                        50,
-                      ),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(50),
                     ),
                   ),
                 ),
@@ -889,12 +794,10 @@ class _TeachbackScreenState
             SizedBox(
               width: double.infinity,
               height: 54,
-              child:
-                  ElevatedButton.icon(
+              child: ElevatedButton.icon(
                 onPressed:
                     _isSubmitting ||
-                            _answerController
-                                .text
+                            _answerController.text
                                 .trim()
                                 .isEmpty
                         ? null
@@ -903,8 +806,7 @@ class _TeachbackScreenState
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child:
-                            CircularProgressIndicator(
+                        child: CircularProgressIndicator(
                           strokeWidth: 2,
                         ),
                       )
@@ -915,11 +817,9 @@ class _TeachbackScreenState
                   _isSubmitting
                       ? 'Checking...'
                       : 'Submit Answer',
-                  style:
-                      const TextStyle(
+                  style: const TextStyle(
                     fontSize: 16,
-                    fontWeight:
-                        FontWeight.w600,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),

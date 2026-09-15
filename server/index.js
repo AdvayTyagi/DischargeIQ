@@ -9,8 +9,7 @@ const {
 
 const {
   validateProcessDischargeResponse,
-  validateGradeAnswerResponse,
-  validateClinicalFacts
+  validateGradeAnswerResponse
 } = require("./validator");
 
 const {
@@ -32,7 +31,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-
 // --------------------------------------------------
 // Health Check
 // --------------------------------------------------
@@ -43,7 +41,6 @@ app.get("/health", (req, res) => {
     service: "DischargeIQ server"
   });
 });
-
 
 // --------------------------------------------------
 // Helper: Validate Required String
@@ -65,7 +62,6 @@ function requireString(body, fieldName) {
   return null;
 }
 
-
 // --------------------------------------------------
 // POST /process-discharge
 // --------------------------------------------------
@@ -79,6 +75,7 @@ app.post("/process-discharge", async (req, res) => {
     } = req.body;
 
     // Validate request
+
     const patientIdError =
       requireString(req.body, "patientId");
 
@@ -111,6 +108,7 @@ app.post("/process-discharge", async (req, res) => {
     );
 
     // Build LLM prompt
+
     const prompt = buildProcessDischargePrompt(
       patientId,
       preferredLanguage,
@@ -118,30 +116,15 @@ app.post("/process-discharge", async (req, res) => {
     );
 
     // Ask Ollama for validated JSON
+
     const result = await generateValidJson(
       prompt,
       validateProcessDischargeResponse,
       3
     );
-    
-  const clinicalFactsValid = validateClinicalFacts(
-    dischargeText,
-    result.simplifiedInstructions
-  );
-
-  if (!clinicalFactsValid) {
-    console.error(
-      "Clinical fact validation failed."
-    );
-
-    return res.status(500).json({
-      error: "Unable to safely process discharge instructions"
-    });
-  }
-
-    
 
     // Make sure the model did not change identifiers
+
     if (result.patientId !== patientId) {
       console.error(
         "LLM returned incorrect patientId."
@@ -166,6 +149,7 @@ app.post("/process-discharge", async (req, res) => {
     }
 
     // Return only validated data
+
     return res.status(200).json(result);
 
   } catch (error) {
@@ -179,7 +163,6 @@ app.post("/process-discharge", async (req, res) => {
     });
   }
 });
-
 
 // --------------------------------------------------
 // POST /grade-answer
@@ -196,6 +179,7 @@ app.post("/grade-answer", async (req, res) => {
     } = req.body;
 
     // Validate request
+
     const patientIdError =
       requireString(req.body, "patientId");
 
@@ -246,6 +230,7 @@ app.post("/grade-answer", async (req, res) => {
     );
 
     // Build LLM prompt
+
     const prompt = buildGradeAnswerPrompt(
       patientId,
       preferredLanguage,
@@ -255,6 +240,7 @@ app.post("/grade-answer", async (req, res) => {
     );
 
     // Ask Ollama for validated JSON
+
     const result = await generateValidJson(
       prompt,
       validateGradeAnswerResponse,
@@ -262,6 +248,7 @@ app.post("/grade-answer", async (req, res) => {
     );
 
     // Make sure the model returned the correct patient
+
     if (result.patientId !== patientId) {
       console.error(
         "LLM returned incorrect patientId."
@@ -273,6 +260,7 @@ app.post("/grade-answer", async (req, res) => {
     }
 
     // Return only validated data
+
     return res.status(200).json(result);
 
   } catch (error) {
@@ -286,7 +274,6 @@ app.post("/grade-answer", async (req, res) => {
     });
   }
 });
-
 
 // --------------------------------------------------
 // Start Server

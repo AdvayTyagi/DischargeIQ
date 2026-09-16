@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';ww
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 class AuthScreen extends StatelessWidget {

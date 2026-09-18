@@ -383,16 +383,22 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: Row(
             children: [
-              const Icon(
-                Icons.cancel,
-                color: Colors.red,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.lightbulb_outline, color: Colors.orange, size: 28),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   L10n.get('notQuite', widget.session.preferredLanguage),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -404,54 +410,49 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
                 if (question.patientAnswer != null) ...[
                   Text(
                     L10n.get('yourAnswerLabel', widget.session.preferredLanguage),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade700),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    question.patientAnswer!,
+                  const SizedBox(height: 6),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
+                    child: Text(question.patientAnswer!, style: const TextStyle(fontSize: 15)),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                 ],
                 if (question.feedback != null) ...[
                   Text(
                     L10n.get('feedback', widget.session.preferredLanguage),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    question.feedback!,
-                  ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 6),
+                  Text(question.feedback!, style: const TextStyle(fontSize: 15, height: 1.4)),
+                  const SizedBox(height: 20),
                 ],
                 if (question.correctAnswer != null) ...[
                   Text(
                     L10n.get('correctAnswer', widget.session.preferredLanguage),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    question.correctAnswer!,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                    ),
+                  const SizedBox(height: 6),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(12)),
+                    child: Text(question.correctAnswer!, style: const TextStyle(fontSize: 15, color: Colors.green, fontWeight: FontWeight.w500)),
                   ),
                 ],
               ],
             ),
           ),
+          actionsPadding: const EdgeInsets.all(16),
           actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text(
-                L10n.get('continue', widget.session.preferredLanguage),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(L10n.get('continue', widget.session.preferredLanguage)),
               ),
             ),
           ],
@@ -523,8 +524,13 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
 
             const SizedBox(height: 8),
 
-            LinearProgressIndicator(
-              value: progress / _maxTotalQuestions,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: LinearProgressIndicator(
+                value: progress / _maxTotalQuestions,
+                minHeight: 12,
+                backgroundColor: Colors.grey.shade200,
+              ),
             ),
 
             const SizedBox(height: 28),
@@ -533,51 +539,54 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
             // QUESTION
             // -------------------------------------------------------
 
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: Colors.grey.shade100,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    L10n.get('teachBackQuestion', widget.session.preferredLanguage),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
+            Card(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              elevation: 0,
+              margin: EdgeInsets.zero,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.help_outline, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          L10n.get('teachBackQuestion', widget.session.preferredLanguage),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Text(
-                    question.question,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      height: 1.4,
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed:
-                          _isSubmitting ? null : _speakQuestion,
-                      icon: const Icon(
-                        Icons.volume_up,
-                      ),
-                      label: Text(
-                        L10n.get('readQuestion', widget.session.preferredLanguage),
+                    const SizedBox(height: 16),
+                    Text(
+                      question.question,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        height: 1.4,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _isSubmitting ? null : _speakQuestion,
+                        icon: const Icon(Icons.volume_up),
+                        label: Text(L10n.get('readQuestion', widget.session.preferredLanguage)),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
 
@@ -660,80 +669,58 @@ class _TeachbackScreenState extends State<TeachbackScreen> {
 
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
+                color: _isListening ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.05) : Colors.white,
+                borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: _isListening
-                      ? Theme.of(context)
-                          .colorScheme
-                          .primary
-                      : Colors.grey.shade300,
-                  width: 2,
+                  color: _isListening ? Theme.of(context).colorScheme.primary : Colors.grey.shade200,
+                  width: _isListening ? 3 : 1,
                 ),
+                boxShadow: _isListening ? [] : [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))
+                ]
               ),
               child: Column(
                 children: [
-                  Icon(
-                    _isListening
-                        ? Icons.mic
-                        : Icons.mic_none,
-                    size: 48,
-                    color: _isListening
-                        ? Theme.of(context)
-                            .colorScheme
-                            .primary
-                        : Colors.grey,
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  Text(
-                    _isListening
-                        ? L10n.get('listening', widget.session.preferredLanguage)
-                        : L10n.get('speakAnswer', widget.session.preferredLanguage),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width: _isListening ? 100 : 80,
+                    height: _isListening ? 100 : 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _isListening ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.surfaceContainerHighest,
+                      boxShadow: _isListening
+                          ? [
+                              BoxShadow(
+                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+                                blurRadius: 20,
+                                spreadRadius: 5,
+                              )
+                            ]
+                          : [],
+                    ),
+                    child: IconButton(
+                      iconSize: _isListening ? 48 : 36,
+                      color: _isListening ? Colors.white : Theme.of(context).colorScheme.onSurfaceVariant,
+                      icon: Icon(_isListening ? Icons.stop : Icons.mic),
+                      onPressed: _isSubmitting ? null : (_isListening ? _stopListening : _startListening),
                     ),
                   ),
-
-                  const SizedBox(height: 16),
-
-                  // -------------------------------------------------
-                  // MICROPHONE BUTTON
-                  // -------------------------------------------------
-
-                  SizedBox(
-                    width: 72,
-                    height: 72,
-                    child: FloatingActionButton(
-                      onPressed: _isSubmitting
-                          ? null
-                          : (_isListening
-                              ? _stopListening
-                              : _startListening),
-                      child: Icon(
-                        _isListening
-                            ? Icons.stop
-                            : Icons.mic,
-                        size: 30,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
+                  const SizedBox(height: 20),
                   Text(
-                    _isListening
-                        ? L10n.get('tapStop', widget.session.preferredLanguage)
-                        : L10n.get('spokenWillAppear', widget.session.preferredLanguage),
-                    textAlign: TextAlign.center,
+                    _isListening ? L10n.get('listening', widget.session.preferredLanguage) : L10n.get('speakAnswer', widget.session.preferredLanguage),
                     style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: _isListening ? Theme.of(context).colorScheme.primary : Colors.grey.shade700,
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _isListening ? L10n.get('tapStop', widget.session.preferredLanguage) : L10n.get('spokenWillAppear', widget.session.preferredLanguage),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                   ),
                 ],
               ),

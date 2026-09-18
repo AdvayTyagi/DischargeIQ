@@ -85,44 +85,41 @@ class ResultsScreen extends StatelessWidget {
 
             const SizedBox(height: 30),
 
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: Colors.grey.shade100,
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    L10n.get('understandingScore', session.preferredLanguage),
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                    ),
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 140,
+                  height: 140,
+                  child: CircularProgressIndicator(
+                    value: totalGraded == 0 ? 0 : correctCount / totalGraded,
+                    strokeWidth: 12,
+                    backgroundColor: Colors.grey.shade200,
+                    color: verdictColor,
+                    strokeCap: StrokeCap.round,
                   ),
-
-                  const SizedBox(height: 8),
-
-                  Text(
-                    '$percent%',
-                    style: const TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
+                ),
+                Column(
+                  children: [
+                    Text(
+                      '$percent%',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: verdictColor,
+                      ),
                     ),
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  Text(
-                    '$correctCount ${L10n.get('outOf', session.preferredLanguage)} $totalGraded ${L10n.get('correct', session.preferredLanguage)}',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey.shade600,
+                    Text(
+                      '$correctCount / $totalGraded',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ),
 
             const SizedBox(height: 24),
@@ -140,104 +137,77 @@ class ResultsScreen extends StatelessWidget {
             ...session.teachBackQuestions.map((q) {
               final bool wasCorrect = q.correct == true;
 
-              return Container(
-                width: double.infinity,
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
+              return Card(
+                margin: const EdgeInsets.only(bottom: 16),
+                elevation: 1,
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  color: Colors.grey.shade100,
+                  side: BorderSide(color: wasCorrect ? Colors.green.shade200 : Colors.red.shade200, width: 1),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          wasCorrect
-                              ? Icons.check_circle
-                              : Icons.cancel,
-                          color: wasCorrect
-                              ? Colors.green
-                              : Colors.red,
-                          size: 20,
-                        ),
-
-                        const SizedBox(width: 8),
-
-                        Expanded(
-                          child: Text(
-                            q.question,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            wasCorrect ? Icons.check_circle : Icons.cancel,
+                            color: wasCorrect ? Colors.green : Colors.red,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              q.question,
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
+                          ),
+                        ],
+                      ),
+                      if (q.patientAnswer != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(8)),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.person_outline, size: 20, color: Colors.grey.shade600),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  q.patientAnswer!,
+                                  style: TextStyle(fontSize: 14, color: Colors.grey.shade800, height: 1.4),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
-                    ),
-
-                    if (q.patientAnswer != null) ...[
-                      const SizedBox(height: 8),
-
-                      Text(
-                        '${L10n.get('answerPrefix', session.preferredLanguage)} ${q.patientAnswer}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade700,
+                      if (!wasCorrect && q.correctAnswer != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.lightbulb_outline, size: 20, color: Colors.green.shade700),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  q.correctAnswer!,
+                                  style: TextStyle(fontSize: 14, color: Colors.green.shade800, fontWeight: FontWeight.w500, height: 1.4),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
+                      ],
                     ],
-
-                    if (q.feedback != null) ...[
-                      const SizedBox(height: 6),
-
-                      Text(
-                        q.feedback!,
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontStyle: FontStyle.italic,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-
-                    // Show the correct answer when the patient's answer
-                    // was incorrect.
-                    if (!wasCorrect && q.correctAnswer != null) ...[
-                      const SizedBox(height: 12),
-
-                      Text(
-                        L10n.get('correctAnswer', session.preferredLanguage),
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-
-                      const SizedBox(height: 4),
-
-                      Text(
-                        q.correctAnswer!,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-
-                    if (q.attempts > 1) ...[
-                      const SizedBox(height: 6),
-
-                      Text(
-                        '${L10n.get('took', session.preferredLanguage)} ${q.attempts} ${L10n.get('tries', session.preferredLanguage)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
               );
             }),

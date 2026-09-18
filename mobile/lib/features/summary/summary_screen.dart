@@ -109,19 +109,14 @@ class _SummaryScreenState extends State<SummaryScreen> {
 
               Text(
                 L10n.get('keyPoints', widget.session.preferredLanguage),
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Colors.grey.shade600,
-                ),
+                style: Theme.of(context).textTheme.bodyLarge,
               ),
 
               const SizedBox(height: 24),
 
               Expanded(
-                child: ListView.separated(
+                child: ListView.builder(
                   itemCount: pointsToShow.length,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 14),
                   itemBuilder: (context, index) {
                     return _SimplifiedPoint(
                       number: index + 1,
@@ -154,20 +149,15 @@ class _SummaryScreenState extends State<SummaryScreen> {
 
               const SizedBox(height: 16),
 
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: () {
-                    context.push(
-                      '/teachback',
-                      extra: widget.session,
-                    );
-                  },
-                  child: Text(
-                    L10n.get('continueTeachBack', widget.session.preferredLanguage),
-                    style: const TextStyle(fontSize: 16),
-                  ),
+              FilledButton(
+                onPressed: () {
+                  context.push(
+                    '/teachback',
+                    extra: widget.session,
+                  );
+                },
+                child: Text(
+                  L10n.get('continueTeachBack', widget.session.preferredLanguage),
                 ),
               ),
             ],
@@ -189,40 +179,41 @@ class _SimplifiedPoint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        color: Colors.grey.shade100,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 14,
-            backgroundColor: Colors.black87,
-            child: Text(
-              '$number',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              child: Text(
+                '$number',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
 
-          const SizedBox(width: 12),
+            const SizedBox(width: 16),
 
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                fontSize: 15,
-                height: 1.4,
+            Expanded(
+              child: Text(
+                text,
+                style: const TextStyle(
+                  fontSize: 16,
+                  height: 1.5,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF334155),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

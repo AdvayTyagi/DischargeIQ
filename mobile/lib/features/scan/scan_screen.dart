@@ -127,12 +127,22 @@ class _ScanScreenState extends State<ScanScreen> {
       appBar: AppBar(
         title: Text(L10n.get('scanDischarge', _selectedLanguage)),
         actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(20),
+            ),
             child: DropdownButton<String>(
               value: _selectedLanguage,
               underline: const SizedBox(),
-              icon: const Icon(Icons.language, color: Colors.black87),
+              icon: Icon(Icons.language, color: Theme.of(context).colorScheme.primary),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
               items: const [
                 DropdownMenuItem(value: 'en', child: Text('English')),
                 DropdownMenuItem(value: 'hi', child: Text('Hindi')),
@@ -156,16 +166,17 @@ class _ScanScreenState extends State<ScanScreen> {
           children: [
             Text(
               L10n.get('scanInstructions', _selectedLanguage),
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
             ),
 
             const SizedBox(height: 8),
 
             Text(
               L10n.get('takePhoto', _selectedLanguage),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
 
             const SizedBox(height: 24),
@@ -173,20 +184,44 @@ class _ScanScreenState extends State<ScanScreen> {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed:
-                        isBusy ? null : () => _pickImage(ImageSource.camera),
-                    icon: const Icon(Icons.camera_alt),
-                    label: Text(L10n.get('camera', _selectedLanguage)),
+                  child: InkWell(
+                    onTap: isBusy ? null : () => _pickImage(ImageSource.camera),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Card(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      elevation: isBusy ? 0 : 2,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Column(
+                          children: [
+                            Icon(Icons.camera_alt, size: 40, color: Theme.of(context).colorScheme.onPrimaryContainer),
+                            const SizedBox(height: 12),
+                            Text(L10n.get('camera', _selectedLanguage), style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onPrimaryContainer)),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed:
-                        isBusy ? null : () => _pickImage(ImageSource.gallery),
-                    icon: const Icon(Icons.photo_library),
-                    label: Text(L10n.get('gallery', _selectedLanguage)),
+                  child: InkWell(
+                    onTap: isBusy ? null : () => _pickImage(ImageSource.gallery),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Card(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      elevation: isBusy ? 0 : 2,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        child: Column(
+                          children: [
+                            Icon(Icons.photo_library, size: 40, color: Theme.of(context).colorScheme.onSecondaryContainer),
+                            const SizedBox(height: 12),
+                            Text(L10n.get('gallery', _selectedLanguage), style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSecondaryContainer)),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -224,40 +259,71 @@ class _ScanScreenState extends State<ScanScreen> {
             const SizedBox(height: 12),
 
             if (_isProcessing)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: CircularProgressIndicator(),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(40),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Extracting text...',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               )
             else
-              TextField(
-                controller: _textController,
-                maxLines: 10,
-                enabled: !_isSubmitting,
-                decoration: InputDecoration(
-                  hintText: L10n.get('extractedHint', _selectedLanguage),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  controller: _textController,
+                  maxLines: 10,
+                  enabled: !_isSubmitting,
+                  style: const TextStyle(fontSize: 15, height: 1.5),
+                  decoration: InputDecoration(
+                    hintText: L10n.get('extractedHint', _selectedLanguage),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.all(20),
                   ),
-                  contentPadding: const EdgeInsets.all(16),
                 ),
               ),
 
             const SizedBox(height: 20),
 
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isBusy ? null : _continueToTeachBack,
-                child: _isSubmitting
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(L10n.get('continueTeachBack', _selectedLanguage)),
-              ),
+            FilledButton(
+              onPressed: isBusy ? null : _continueToTeachBack,
+              child: _isSubmitting
+                  ? const SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : Text(L10n.get('continueTeachBack', _selectedLanguage)),
             ),
           ],
         ),
